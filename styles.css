@@ -78,7 +78,16 @@ button:hover {
   align-items: center;
 }
 
+#orders li.pending {
+  background-color: #fff9e6;
+}
+
+#orders li.ordered {
+  background-color: #e6f7ff;
+}
+
 #orders li.completed {
+  background-color: #e6ffe6;
   text-decoration: line-through;
   color: #888;
 }

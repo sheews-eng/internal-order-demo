@@ -2,6 +2,7 @@ const orderForm = document.getElementById('order-form');
 const ordersList = document.getElementById('orders');
 const searchInput = document.getElementById('search');
 const deleteCompletedBtn = document.getElementById('delete-completed');
+const markAllOrderedBtn = document.getElementById('mark-all-ordered');
 const markAllCompletedBtn = document.getElementById('mark-all-completed');
 
 let orders = JSON.parse(localStorage.getItem('orders')) || [];
@@ -16,11 +17,11 @@ function renderOrders(filter='') {
     )
     .forEach((order, index) => {
       const li = document.createElement('li');
-      li.className = order.completed ? 'completed' : '';
+      li.className = order.status.toLowerCase();
       li.innerHTML = `
-        <span>${order.customer} - ${order.item} - Qty: ${order.quantity}</span>
+        <span>${order.customer} - ${order.item} - Qty: ${order.quantity} - ${order.status}</span>
         <div>
-          <button onclick="toggleComplete(${index})">${order.completed ? 'Undo' : 'Complete'}</button>
+          <button onclick="advanceStatus(${index})">Next</button>
           <button onclick="deleteOrder(${index})">Delete</button>
         </div>
       `;
@@ -37,7 +38,8 @@ orderForm.addEventListener('submit', e => {
   const quantity = document.getElementById('quantity').value.trim();
   if(!customer || !item || !quantity) return;
 
-  orders.push({ customer, item, quantity, completed: false });
+  // 每次提交都新建一条订单记录
+  orders.push({ customer, item, quantity, status: 'Pending' });
   orderForm.reset();
   renderOrders(searchInput.value);
 });
@@ -53,20 +55,28 @@ function deleteOrder(index) {
   renderOrders(searchInput.value);
 }
 
-// 切换完成状态
-function toggleComplete(index) {
-  orders[index].completed = !orders[index].completed;
+// 状态循环: Pending → Ordered → Completed → Pending
+function advanceStatus(index) {
+  const statusOrder = ['Pending', 'Ordered', 'Completed'];
+  const current = orders[index].status;
+  const next = statusOrder[(statusOrder.indexOf(current)+1) % statusOrder.length];
+  orders[index].status = next;
   renderOrders(searchInput.value);
 }
 
 // 批量操作
 deleteCompletedBtn.addEventListener('click', () => {
-  orders = orders.filter(o => !o.completed);
+  orders = orders.filter(o => o.status !== 'Completed');
+  renderOrders(searchInput.value);
+});
+
+markAllOrderedBtn.addEventListener('click', () => {
+  orders = orders.map(o => ({...o, status: 'Ordered'}));
   renderOrders(searchInput.value);
 });
 
 markAllCompletedBtn.addEventListener('click', () => {
-  orders = orders.map(o => ({...o, completed: true}));
+  orders = orders.map(o => ({...o, status: 'Completed'}));
   renderOrders(searchInput.value);
 });
 
