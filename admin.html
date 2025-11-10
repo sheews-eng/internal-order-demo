@@ -3,32 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Order Management</title>
-<link rel="stylesheet" href="styles.css">
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<h1>Admin Dashboard</h1>
 
-<header><h1>Admin Order Management</h1></header>
+<div>
+  <input type="text" id="searchAdmin" placeholder="Search orders by customer or item">
+  <button id="markCompleted">Mark All Completed</button>
+  <button id="deleteCompleted">Delete Completed Orders</button>
+</div>
 
-<main>
-<label for="salesman-filter">Filter by Salesman:</label>
-<input type="text" id="salesman-filter" placeholder="Enter salesman email">
+<table id="adminTable">
+  <thead>
+    <tr>
+      <th>Salesman</th>
+      <th>Customer</th>
+      <th>Item</th>
+      <th>Quantity</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-<section id="orders-section">
-  <h2>All Orders</h2>
-  <ul id="orders"></ul>
-  <div class="actions">
-    <button id="mark-all-ordered">Mark All Ordered</button>
-    <button id="mark-all-completed">Mark All Completed</button>
-    <button id="delete-completed">Delete Completed</button>
-  </div>
-</section>
-</main>
-
-<script src="main.js"></script>
+<script src="script.js"></script>
 <script>
-const isAdmin = true;
-renderOrders(); // Admin 默认显示全部
+  initAdminPage();
 </script>
 </body>
 </html>
