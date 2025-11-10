@@ -20,33 +20,20 @@ h1 {
   font-size: 1.8rem;
 }
 
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-width: 400px;
+form, #orders-section {
+  max-width: 500px;
   margin: 0 auto 1rem auto;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
   background: #fff;
   padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-input, button {
+input, select, button {
   padding: 0.5rem;
   font-size: 1rem;
   border-radius: 6px;
   border: 1px solid #ccc;
-}
-
-input#search {
-  margin-top: 0.5rem;
 }
 
 button {
@@ -54,19 +41,11 @@ button {
   color: #fff;
   border: none;
   cursor: pointer;
+  margin-top: 0.5rem;
 }
 
 button:hover {
   background-color: #45a049;
-}
-
-#order-list {
-  max-width: 400px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 #orders li {
@@ -78,34 +57,14 @@ button:hover {
   align-items: center;
 }
 
-#orders li.pending {
-  background-color: #fff9e6;
-}
+.pending { background-color: #fff9e6; }
+.ordered { background-color: #e6f7ff; }
+.completed { background-color: #e6ffe6; text-decoration: line-through; color: #888; }
 
-#orders li.ordered {
-  background-color: #e6f7ff;
-}
-
-#orders li.completed {
-  background-color: #e6ffe6;
-  text-decoration: line-through;
-  color: #888;
-}
-
-#orders li button {
-  margin-left: 5px;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
-}
-
-.actions {
-  margin-top: 0.5rem;
-  display: flex;
-  gap: 0.5rem;
-}
+.actions { margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 @media (min-width: 600px) {
-  .form-section, #order-list {
-    max-width: 500px;
+  form, #orders-section {
+    max-width: 600px;
   }
 }

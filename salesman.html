@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salesman Order Entry</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header><h1>Salesman Order Entry</h1></header>
+
+<main>
+<form id="order-form">
+  <input type="text" id="customer" placeholder="Customer Name" required>
+  <input type="text" id="item" placeholder="Item Code" required>
+  <input type="number" id="quantity" placeholder="Quantity" min="1" required>
+  <button type="submit">Add Order</button>
+</form>
+
+<section id="orders-section">
+  <h2>My Orders</h2>
+  <ul id="orders"></ul>
+  <div class="actions">
+    <button id="mark-all-ordered">Mark All Ordered</button>
+    <button id="mark-all-completed">Mark All Completed</button>
+    <button id="delete-completed">Delete Completed</button>
+  </div>
+</section>
+</main>
+
+<script src="main.js"></script>
+<script>
+const currentUserEmail = "salesman@example.com"; // 这里可以改为 Cloudflare Access JWT 提取
+const isAdmin = false;
+renderOrders(currentUserEmail);
+</script>
+</body>
+</html>
