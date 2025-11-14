@@ -4,10 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <h1>Admin Dashboard</h1>
+
+<div class="input-section">
+  <input type="text" id="searchAdmin" placeholder="Search orders by customer or item">
+  <button id="markCompleted">Mark All Completed</button>
+  <button id="deleteCompleted">Delete Completed Orders</button>
+</div>
 
 <table id="adminTable">
   <thead>
@@ -16,6 +22,7 @@
       <th>Customer</th>
       <th>Items</th>
       <th>Status</th>
+      <th>Action</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -23,58 +30,9 @@
 
 <audio id="orderSound" src="ding.mp3" preload="auto"></audio>
 
-<!-- Firebase SDK -->
+<script type="module" src="firebase-script.js"></script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
-  authDomain: "internal-orders-765dd.firebaseapp.com",
-  databaseURL: "https://internal-orders-765dd-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "internal-orders-765dd",
-  storageBucket: "internal-orders-765dd.appspot.com",
-  messagingSenderId: "778145240016",
-  appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
-  measurementId: "G-H0FVWM7V1R"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const tableBody = document.querySelector('#adminTable tbody');
-const audio = document.getElementById('orderSound');
-
-let lastCount = 0;
-
-const ordersRef = ref(db, 'orders');
-onValue(ordersRef, (snapshot) => {
-  const data = snapshot.val() || {};
-  const orders = Object.values(data);
-
-  // 表格渲染
-  tableBody.innerHTML = '';
-  const grouped = {};
-  orders.forEach(o => {
-    const key = `${o.salesman}||${o.customer}`;
-    if(!grouped[key]) grouped[key] = [];
-    grouped[key].push(o);
-  });
-
-  Object.entries(grouped).forEach(([key, customerOrders]) => {
-    const [salesman, customer] = key.split('||');
-    const itemsStr = customerOrders.map(o => `${o.item} x${o.quantity} ($${o.price})`).join(', ');
-    const status = customerOrders.every(o => o.status === 'Completed') ? 'Completed' :
-                   customerOrders.every(o => o.status === 'Ordered') ? 'Ordered' : 'Pending';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${salesman}</td><td>${customer}</td><td>${itemsStr}</td><td>${status}</td>`;
-    tableBody.appendChild(tr);
-  });
-
-  // 提示音
-  const pendingCount = orders.filter(o => o.status === 'Pending').length;
-  if(pendingCount > lastCount) audio.play();
-  lastCount = pendingCount;
-});
+  initAdminPage(); // 初始化 Admin 页面
 </script>
 </body>
 </html>
