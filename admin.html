@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
 <link rel="stylesheet" href="styles.css">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
 </head>
 <body>
 <h1>Admin Dashboard</h1>
@@ -28,11 +32,12 @@
   <tbody></tbody>
 </table>
 
-<audio id="orderSound" src="/ding.mp3" preload="auto"></audio>
+<audio id="orderSound" src="ding.mp3" preload="auto"></audio>
 
-<script src="script.js"></script>
+<!-- 脚本 -->
+<script type="module" src="script.js"></script>
 <script>
-  initAdminPage(true); // true 表示启用提示音
+  initAdminPage(true); // 启用提示音
 </script>
 </body>
 </html>
