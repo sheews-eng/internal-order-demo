@@ -3,22 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Internal Order</title>
+<title>Internal Order Redirect</title>
 <script>
-async function redirectUser() {
-  const resp = await fetch('/cdn-cgi/access/get-identity');
-  if (!resp.ok) return;
-  const data = await resp.json();
-  const email = data.email;
-  if (email === 'sheews@sslaccessparts.com') {
-    window.location.href = '/admin.html';
-  } else if (email === 'sheesl@sslaccessparts.com') {
-    window.location.href = '/salesman.html';
-  } else {
-    document.body.innerHTML = '<h2>Access Denied</h2>';
-  }
-}
-redirectUser();
+  // 直接重定向到 Admin 或 Salesman 页面
+  window.location.href = '/salesman.html'; // 或 '/admin.html'
 </script>
 </head>
 <body>
