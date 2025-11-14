@@ -1,28 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Internal Order</title>
-  <script>
-    // 自动读取 Cloudflare Access 邮箱
-    async function redirectUser() {
-      const resp = await fetch('/cdn-cgi/access/get-identity');
-      if (!resp.ok) return;
-      const data = await resp.json();
-      const email = data.email;
-      if (email === 'sheews@sslaccessparts.com') {
-        window.location.href = '/admin.html';
-      } else if (email === 'sheesl@sslaccessparts.com') {
-        window.location.href = '/salesman.html';
-      } else {
-        document.body.innerHTML = '<h2>Access Denied</h2>';
-      }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internal Order</title>
+<script>
+  // 自动读取 Cloudflare Access 邮箱
+  async function redirectUser() {
+    const resp = await fetch('/cdn-cgi/access/get-identity');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const email = data.email;
+    if (email === 'sheews@sslaccessparts.com') {
+      window.location.href = '/admin.html';
+    } else if (email === 'sheesl@sslaccessparts.com') {
+      window.location.href = '/salesman.html';
+    } else {
+      document.body.innerHTML = '<h2>Access Denied</h2>';
     }
-    redirectUser();
-  </script>
+  }
+  redirectUser();
+</script>
 </head>
 <body>
-  <h2>Redirecting...</h2>
+<h2>Redirecting...</h2>
 </body>
 </html>
