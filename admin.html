@@ -9,12 +9,10 @@
 <body>
 <h1>Admin Dashboard</h1>
 
-<button id="enableAudio">Enable Audio</button>
-<audio id="orderSound" src="ding.mp3" preload="auto"></audio>
-
 <table id="adminTable">
   <thead>
     <tr>
+      <th>Salesman</th>
       <th>Customer</th>
       <th>Items</th>
       <th>Status</th>
@@ -24,38 +22,48 @@
   <tbody></tbody>
 </table>
 
-<script type="module" src="firebase-script.js"></script>
+<audio id="orderSound" src="ding.mp3" preload="auto"></audio>
+
 <script type="module">
-const audio = document.getElementById('orderSound');
-document.getElementById('enableAudio').addEventListener('click', () => {
-  audio.play().then(()=>audio.pause());
-  document.getElementById('enableAudio').style.display='none';
-});
+  import { listenOrders, updateOrderStatus, deleteOrder } from './firebase-script.js';
+  const tableBody = document.querySelector('#adminTable tbody');
+  const audio = document.getElementById('orderSound');
 
-const tableBody = document.querySelector('#adminTable tbody');
-let lastPendingCount = 0;
+  function renderOrders(orders) {
+    tableBody.innerHTML = '';
+    orders.forEach(o => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${o.salesman || 'N/A'}</td>
+        <td>${o.customer}</td>
+        <td>${o.item} x${o.quantity} ($${o.price})</td>
+        <td>${o.status}</td>
+        <td>
+          ${o.status !== 'Completed' ? `<button data-id="${o.id}" data-status="Completed">Mark Completed</button>` : ''}
+          <button data-id="${o.id}" data-status="delete">Delete</button>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+  }
 
-onOrdersChange(orders=>{
-  tableBody.innerHTML='';
-  const allOrders = Object.entries(orders).map(([id,o])=>({id,...o}));
+  let lastPending = 0;
+  listenOrders(orders => {
+    renderOrders(orders);
 
-  allOrders.forEach(o=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${o.customer}</td>
-      <td>${o.item} x${o.quantity} ($${o.price})</td>
-      <td>${o.status}</td>
-      <td>
-        ${o.status!=='Completed'?`<button onclick="updateOrderStatus('${o.id}','Completed')">Mark Completed</button>`:''}
-      </td>
-    `;
-    tableBody.appendChild(tr);
+    const pending = orders.filter(o => o.status === 'Pending').length;
+    if(pending > lastPending) audio.play();
+    lastPending = pending;
   });
 
-  const pendingCount = allOrders.filter(o=>o.status==='Pending').length;
-  if(pendingCount>lastPendingCount) audio.play();
-  lastPendingCount = pendingCount;
-});
+  tableBody.addEventListener('click', e => {
+    if(e.target.tagName !== 'BUTTON') return;
+    const id = e.target.dataset.id;
+    const action = e.target.dataset.status;
+
+    if(action === 'delete') deleteOrder(id);
+    else updateOrderStatus(id, action);
+  });
 </script>
 </body>
 </html>

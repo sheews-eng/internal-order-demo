@@ -1,7 +1,8 @@
-<script type="module">
+// firebase-script.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
+// Firebase 配置
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
   authDomain: "internal-orders-765dd.firebaseapp.com",
@@ -13,13 +14,28 @@ const firebaseConfig = {
   measurementId: "G-H0FVWM7V1R"
 };
 
+// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-window.firebaseDB = db;
-window.pushOrder = (order) => push(ref(db, 'orders'), order);
-window.onOrdersChange = (callback) => {
-  onValue(ref(db, 'orders'), snapshot => callback(snapshot.val() || {}));
-};
-window.updateOrderStatus = (id, status) => set(ref(db, 'orders/' + id + '/status'), status);
-</script>
+// ----------------- 公共方法 -----------------
+export function pushOrder(order) {
+  push(ref(db, 'orders'), order);
+}
+
+export function listenOrders(callback) {
+  const ordersRef = ref(db, 'orders');
+  onValue(ordersRef, snapshot => {
+    const data = snapshot.val() || {};
+    const orders = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+    callback(orders);
+  });
+}
+
+export function updateOrderStatus(id, status) {
+  update(ref(db, 'orders/' + id), { status });
+}
+
+export function deleteOrder(id) {
+  remove(ref(db, 'orders/' + id));
+}
