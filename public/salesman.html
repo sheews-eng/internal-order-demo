@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Salesman Orders</title>
-<link rel="stylesheet" href="styles.css">
+<title>Salesman Order</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <h1>Salesman Order Page</h1>
@@ -14,81 +14,23 @@
   <input type="text" id="itemCode" placeholder="Item Code">
   <input type="number" id="quantity" placeholder="Quantity" min="1">
   <input type="number" id="price" placeholder="Price" min="0" step="0.01">
-  <button id="addOrder">Add Order</button>
-</div>
-
-<div class="search-section">
-  <input type="text" id="search" placeholder="Search orders">
+  <button id="addOrder" class="add">Add Order</button>
 </div>
 
 <table id="orderTable">
   <thead>
     <tr>
-      <th>Customer</th><th>Items</th><th>Status</th><th>Action</th>
+      <th>Customer</th>
+      <th>Items</th>
+      <th>Status</th>
+      <th>Action</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
 <audio id="orderSound" src="ding.mp3" preload="auto"></audio>
-<script src="common.js"></script>
-<script>
-initOrderSound(true);
-
-const email = 'sheesl@sslaccessparts.com';
-let orders = loadOrders();
-const tableBody = document.querySelector('#orderTable tbody');
-
-function render(){
-  tableBody.innerHTML = '';
-  const myOrders = orders.filter(o=>o.salesman===email);
-  const grouped = {};
-  myOrders.forEach(o=>{ if(!grouped[o.customer]) grouped[o.customer]=[]; grouped[o.customer].push(o); });
-
-  Object.entries(grouped).forEach(([customer, arr])=>{
-    const tr = document.createElement('tr');
-    const itemsStr = arr.map(o=>`${o.item} x${o.quantity} ($${o.price})`).join(', ');
-    const status = arr.every(o=>o.status==='Completed')?'Completed':
-                   arr.every(o=>o.status==='Ordered')?'Ordered':'Pending';
-    tr.innerHTML = `<td>${customer}</td><td>${itemsStr}</td><td>${status}</td>
-      <td>${status!=='Completed'?`<button onclick="markCustomerOrdered('${customer}')">Mark Ordered</button>`:''}
-      <button onclick="deleteCustomerOrders('${customer}')">Delete Orders</button></td>`;
-    tableBody.appendChild(tr);
-  });
-}
-
-window.markCustomerOrdered = (customer)=>{
-  orders = orders.map(o=>o.salesman===email && o.customer===customer?{...o,status:'Ordered'}:o);
-  saveOrders(orders); render();
-};
-
-window.deleteCustomerOrders = (customer)=>{
-  orders = orders.filter(o=>!(o.salesman===email && o.customer===customer));
-  saveOrders(orders); render();
-};
-
-document.getElementById('addOrder').addEventListener('click', ()=>{
-  const customer=document.getElementById('customerName').value.trim();
-  const item=document.getElementById('itemCode').value.trim();
-  const quantity=parseInt(document.getElementById('quantity').value,10);
-  const price=parseFloat(document.getElementById('price').value||0);
-  if(!customer || !item || !quantity || isNaN(price)) return alert('Fill all fields');
-  orders.push({salesman:email, customer, item, quantity, price, status:'Pending'});
-  saveOrders(orders); render();
-  document.getElementById('customerName').value='';
-  document.getElementById('itemCode').value='';
-  document.getElementById('quantity').value='';
-  document.getElementById('price').value='';
-});
-
-document.getElementById('search').addEventListener('input',(e)=>{
-  const val=e.target.value.toLowerCase();
-  tableBody.querySelectorAll('tr').forEach(tr=>{
-    tr.style.display=Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(val))?'':'none';
-  });
-});
-
-render();
-</script>
+<script src="script.js"></script>
+<script>initSalesmanPage();</script>
 </body>
 </html>

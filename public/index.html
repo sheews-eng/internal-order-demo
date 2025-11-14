@@ -3,27 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Internal Orders Redirect</title>
+<title>Internal Order</title>
 <script>
-  // 根据 Cloudflare Access 邮箱跳转
-  async function redirectUser() {
-    try {
-      const resp = await fetch('/cdn-cgi/access/get-identity');
-      if (!resp.ok) throw new Error("Access denied");
-      const data = await resp.json();
-      const email = data.email;
-      if(email === 'sheews@sslaccessparts.com') {
-        window.location.href = 'admin.html';
-      } else if(email === 'sheesl@sslaccessparts.com') {
-        window.location.href = 'salesman.html';
-      } else {
-        document.body.innerHTML = '<h2>Access Denied</h2>';
-      }
-    } catch {
-      document.body.innerHTML = '<h2>Access Denied</h2>';
-    }
+  // 简单重定向示例，判断角色
+  const currentUserRole = 'salesman'; // 'salesman' 或 'admin' 测试用
+  if(currentUserRole === 'admin'){
+    window.location.href = 'admin.html';
+  } else {
+    window.location.href = 'salesman.html';
   }
-  redirectUser();
 </script>
 </head>
 <body>
