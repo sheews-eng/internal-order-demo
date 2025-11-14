@@ -18,18 +18,67 @@
 <table id="adminTable">
   <thead>
     <tr>
-      <th>Salesman</th>
-      <th>Customer</th>
-      <th>Items</th>
-      <th>Status</th>
-      <th>Action</th>
+      <th>Salesman</th><th>Customer</th><th>Items</th><th>Status</th><th>Action</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
 <audio id="orderSound" src="ding.mp3" preload="auto"></audio>
+<script src="common.js"></script>
+<script>
+initOrderSound(true);
+let orders = loadOrders();
+const tableBody=document.querySelector('#adminTable tbody');
 
-<script type="module" src="admin-script.js"></script>
+function render(){
+  tableBody.innerHTML='';
+  const grouped = {};
+  orders.forEach(o=>{ const key=`${o.salesman}||${o.customer}`; if(!grouped[key]) grouped[key]=[]; grouped[key].push(o); });
+
+  Object.entries(grouped).forEach(([key, arr],index)=>{
+    const [salesman, customer]=key.split('||');
+    const itemsStr=arr.map(o=>`${o.item} x${o.quantity} ($${o.price})`).join(', ');
+    const status=arr.every(o=>o.status==='Completed')?'Completed':arr.every(o=>o.status==='Ordered')?'Ordered':'Pending';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${salesman}</td><td>${customer}</td><td>${itemsStr}</td><td>${status}</td>
+      <td>${status!=='Completed'?`<button onclick="markCompleted(${index})">Mark Completed</button>`:''}
+      <button onclick="deleteCustomerOrders('${salesman}','${customer}')">Delete Orders</button></td>`;
+    tableBody.appendChild(tr);
+  });
+}
+
+window.markCompleted=(index)=>{
+  const keys=Object.keys(orders.reduce((acc,o)=>{acc[`${o.salesman}||${o.customer}`]=true;return acc;},{}));
+  const [salesman,customer]=keys[index].split('||');
+  orders=orders.map(o=>o.salesman===salesman && o.customer===customer?{...o,status:'Completed'}:o);
+  saveOrders(orders); render();
+};
+
+window.deleteCustomerOrders=(salesman,customer)=>{
+  orders=orders.filter(o=>!(o.salesman===salesman && o.customer===customer));
+  saveOrders(orders); render();
+};
+
+document.getElementById('markCompleted').addEventListener('click',()=>{
+  orders=orders.map(o=>({...o,status:'Completed'})); saveOrders(orders); render();
+});
+document.getElementById('deleteCompleted').addEventListener('click',()=>{
+  orders=orders.filter(o=>o.status!=='Completed'); saveOrders(orders); render();
+});
+document.getElementById('searchAdmin').addEventListener('input',(e)=>{
+  const val=e.target.value.toLowerCase();
+  tableBody.querySelectorAll('tr').forEach(tr=>{
+    tr.style.display=Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(val))?'':'none';
+  });
+});
+
+setInterval(()=>{
+  orders = loadOrders();
+  render();
+},2000); // 每2秒刷新
+
+render();
+</script>
 </body>
 </html>

@@ -1,20 +1,19 @@
-export function getOrders() {
-    return JSON.parse(localStorage.getItem('internalOrders') || '[]');
-}
+// localStorage key
+const STORAGE_KEY = 'internalOrders';
 
-export function saveOrders(orders) {
-    localStorage.setItem('internalOrders', JSON.stringify(orders));
-}
+// 读取/保存订单
+function loadOrders(){ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+function saveOrders(orders){ localStorage.setItem(STORAGE_KEY, JSON.stringify(orders)); }
 
-export function initOrderSound(enable = true) {
-    if (!enable) return;
-    const audio = document.getElementById('orderSound');
-    let lastPendingCount = getOrders().filter(o => o.status === 'Pending').length;
-
-    setInterval(() => {
-        const orders = getOrders();
-        const pendingCount = orders.filter(o => o.status === 'Pending').length;
-        if (pendingCount > lastPendingCount && audio) audio.play();
-        lastPendingCount = pendingCount;
-    }, 3000); // 每3秒检测
+// 提示音初始化
+function initOrderSound(enable=true){
+  if(!enable) return;
+  const audio = document.getElementById('orderSound');
+  let lastPending = loadOrders().filter(o=>o.status==='Pending').length;
+  setInterval(()=>{
+    const orders = loadOrders();
+    const pending = orders.filter(o=>o.status==='Pending').length;
+    if(pending > lastPending && audio) audio.play();
+    lastPending = pending;
+  }, 2000); // 每2秒检测一次
 }
