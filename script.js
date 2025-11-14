@@ -4,29 +4,17 @@ function loadOrders() { return JSON.parse(localStorage.getItem(getStorageKey()) 
 function saveOrders(orders) { localStorage.setItem(getStorageKey(), JSON.stringify(orders)); }
 
 // ---------------- 提示音 ----------------
-let audio;
 function initOrderSound(enableSound) {
-  if (!enableSound) return;
-  audio = document.getElementById('orderSound');
-
-  // 自动播放需要用户先点击按钮解锁
-  const btn = document.getElementById('enableSound');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      audio.play().then(()=>audio.pause());
-      btn.style.display = 'none';
-      alert('Sound enabled!');
-    });
-  }
-
+  if(!enableSound) return;
+  const audio = document.getElementById('orderSound');
   let lastPendingCount = loadOrders().filter(o => o.status === 'Pending').length;
 
   setInterval(() => {
     const orders = loadOrders();
     const pendingCount = orders.filter(o => o.status === 'Pending').length;
-    if (pendingCount > lastPendingCount && audio) audio.play().catch(()=>{});
+    if(pendingCount > lastPendingCount && audio) audio.play();
     lastPendingCount = pendingCount;
-  }, 5000);
+  }, 3000); // 每3秒检测一次
 }
 
 // ---------------- Salesman 页面 ----------------
@@ -40,19 +28,19 @@ function initSalesmanPage(enableSound=false) {
 
   const render = () => {
     tableBody.innerHTML = '';
-
+    orders = loadOrders(); // 自动刷新
     const myOrders = orders.filter(o => o.salesman === email);
-    const grouped = myOrders.reduce((acc, o) => {
-      if (!acc[o.customer]) acc[o.customer] = [];
-      acc[o.customer].push(o);
-      return acc;
+    const grouped = myOrders.reduce((acc, o) => { 
+      if(!acc[o.customer]) acc[o.customer]=[]; 
+      acc[o.customer].push(o); 
+      return acc; 
     }, {});
 
-    Object.entries(grouped).forEach(([customer, custOrders]) => {
+    Object.entries(grouped).forEach(([customer, customerOrders]) => {
       const tr = document.createElement('tr');
-      const itemsStr = custOrders.map(o => `${o.item} x${o.quantity} ($${o.price})`).join(', ');
-      const status = custOrders.every(o => o.status === 'Completed') ? 'Completed' :
-                     custOrders.every(o => o.status === 'Ordered') ? 'Ordered' : 'Pending';
+      const itemsStr = customerOrders.map(o => `${o.item} x${o.quantity} ($${o.price})`).join(', ');
+      const status = customerOrders.every(o => o.status === 'Completed') ? 'Completed' :
+                     customerOrders.every(o => o.status === 'Ordered') ? 'Ordered' : 'Pending';
       tr.innerHTML = `
         <td>${customer}</td>
         <td>${itemsStr}</td>
@@ -67,13 +55,13 @@ function initSalesmanPage(enableSound=false) {
   };
 
   window.markCustomerOrdered = (customer) => {
-    orders = orders.map(o => o.salesman===email && o.customer===customer ? {...o, status:'Ordered'} : o);
+    orders = orders.map(o => o.salesman === email && o.customer === customer ? {...o, status:'Ordered'} : o);
     saveOrders(orders);
     render();
   };
 
   window.deleteCustomerOrders = (customer) => {
-    orders = orders.filter(o => !(o.salesman===email && o.customer===customer));
+    orders = orders.filter(o => !(o.salesman === email && o.customer === customer));
     saveOrders(orders);
     render();
   };
@@ -89,24 +77,21 @@ function initSalesmanPage(enableSound=false) {
     saveOrders(orders);
     render();
 
-    // 播放提示音
-    if(audio) audio.play().catch(()=>{});
-
-    // 清空输入
     document.querySelector('#customerName').value='';
     document.querySelector('#itemCode').value='';
     document.querySelector('#quantity').value='';
     document.querySelector('#price').value='';
   });
 
-  document.querySelector('#search').addEventListener('input', e => {
+  document.querySelector('#search').addEventListener('input', (e) => {
     const val = e.target.value.toLowerCase();
-    tableBody.querySelectorAll('tr').forEach(tr => {
-      tr.style.display = Array.from(tr.children).some(td => td.textContent.toLowerCase().includes(val)) ? '' : 'none';
+    tableBody.querySelectorAll('tr').forEach(tr=>{
+      tr.style.display = Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(val)) ? '' : 'none';
     });
   });
 
   render();
+  setInterval(render, 5000); // 自动刷新页面数据，每5秒
 }
 
 // ---------------- Admin 页面 ----------------
@@ -118,7 +103,7 @@ function initAdminPage(enableSound=false) {
 
   const render = () => {
     tableBody.innerHTML = '';
-
+    orders = loadOrders(); // 自动刷新
     const grouped = orders.reduce((acc, o) => {
       const key = `${o.salesman}||${o.customer}`;
       if(!acc[key]) acc[key] = [];
@@ -149,7 +134,7 @@ function initAdminPage(enableSound=false) {
   window.markCompleted = (index) => {
     const keys = Object.keys(orders.reduce((acc, o) => { acc[`${o.salesman}||${o.customer}`]=true; return acc; }, {}));
     const [salesman, customer] = keys[index].split('||');
-    orders = orders.map(o => o.salesman===salesman && o.customer===customer ? {...o, status:'Completed'} : o);
+    orders = orders.map(o => o.salesman === salesman && o.customer === customer ? {...o, status:'Completed'} : o);
     saveOrders(orders);
     render();
   };
@@ -172,12 +157,13 @@ function initAdminPage(enableSound=false) {
     render();
   });
 
-  document.querySelector('#searchAdmin').addEventListener('input', e => {
+  document.querySelector('#searchAdmin').addEventListener('input', (e) => {
     const val = e.target.value.toLowerCase();
-    tableBody.querySelectorAll('tr').forEach(tr => {
-      tr.style.display = Array.from(tr.children).some(td => td.textContent.toLowerCase().includes(val)) ? '' : 'none';
+    tableBody.querySelectorAll('tr').forEach(tr=>{
+      tr.style.display = Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(val)) ? '' : 'none';
     });
   });
 
   render();
+  setInterval(render, 5000); // 自动刷新页面数据，每5秒
 }
