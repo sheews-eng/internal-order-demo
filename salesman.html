@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Salesman Order</title>
+<title>Salesman Order Page</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,17 +17,13 @@
   <button id="addOrder">Add Order</button>
 </div>
 
-<div class="search-section">
-  <input type="text" id="search" placeholder="Search orders">
-</div>
-
+<h2>Your Orders</h2>
 <table id="orderTable">
   <thead>
     <tr>
       <th>Customer</th>
-      <th>Items</th>
+      <th>Item x Qty (Price)</th>
       <th>Status</th>
-      <th>Action</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -35,9 +31,71 @@
 
 <audio id="orderSound" src="ding.mp3" preload="auto"></audio>
 
-<script src="script.js"></script>
-<script>
-  initSalesmanPage(true); // 启用提示音
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
+  authDomain: "internal-orders-765dd.firebaseapp.com",
+  databaseURL: "https://internal-orders-765dd-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "internal-orders-765dd",
+  storageBucket: "internal-orders-765dd.appspot.com",
+  messagingSenderId: "778145240016",
+  appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
+  measurementId: "G-H0FVWM7V1R"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const email = window.CF_ACCESS_EMAIL || 'salesman@example.com';
+const tableBody = document.querySelector('#orderTable tbody');
+const audio = document.getElementById('orderSound');
+
+function renderOrders(orders) {
+  tableBody.innerHTML = '';
+  orders.forEach(o => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${o.customer}</td>
+      <td>${o.item} x${o.quantity} ($${o.price})</td>
+      <td>${o.status}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+// 新订单监听
+const ordersRef = ref(db, 'orders');
+onValue(ordersRef, (snapshot) => {
+  const data = snapshot.val() || {};
+  const orders = Object.values(data).filter(o => o.salesman === email);
+  renderOrders(orders);
+  // 提示音
+  const pendingCount = orders.filter(o => o.status === 'Pending').length;
+  if(pendingCount > 0) audio.play();
+});
+
+// 添加订单
+document.getElementById('addOrder').addEventListener('click', () => {
+  const customer = document.getElementById('customerName').value.trim();
+  const item = document.getElementById('itemCode').value.trim();
+  const quantity = parseInt(document.getElementById('quantity').value);
+  const price = parseFloat(document.getElementById('price').value || 0);
+  if(!customer || !item || !quantity || isNaN(price)) return alert('Fill all fields');
+
+  push(ref(db, 'orders'), {
+    customer, item, quantity, price, salesman: email,
+    status: 'Pending', timestamp: Date.now()
+  });
+
+  document.getElementById('customerName').value='';
+  document.getElementById('itemCode').value='';
+  document.getElementById('quantity').value='';
+  document.getElementById('price').value='';
+});
 </script>
 </body>
 </html>
