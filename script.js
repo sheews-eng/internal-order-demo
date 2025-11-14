@@ -14,23 +14,27 @@ function initOrderSound(enableSound) {
     const pendingCount = orders.filter(o => o.status === 'Pending').length;
     if(pendingCount > lastPendingCount && audio) audio.play();
     lastPendingCount = pendingCount;
-  }, 3000); // 每3秒检测一次
+  }, 5000);
 }
 
 // ---------------- Salesman 页面 ----------------
 function initSalesmanPage(enableSound=false) {
   initOrderSound(enableSound);
-  const email = window.CF_ACCESS_EMAIL || '';
+
   let orders = loadOrders();
   const tableBody = document.querySelector('#orderTable tbody');
 
   const render = () => {
     tableBody.innerHTML = '';
-    const myOrders = orders.filter(o => o.salesman === email);
-    const grouped = myOrders.reduce((acc, o) => { if(!acc[o.customer]) acc[o.customer]=[]; acc[o.customer].push(o); return acc; }, {});
+    const grouped = orders.reduce((acc, o) => {
+      if(!acc[o.customer]) acc[o.customer]=[];
+      acc[o.customer].push(o);
+      return acc;
+    }, {});
+
     Object.entries(grouped).forEach(([customer, customerOrders]) => {
       const tr = document.createElement('tr');
-      const itemsStr = customerOrders.map(o => `${o.item} x${o.quantity} ($${o.price.toFixed(2)})`).join(', ');
+      const itemsStr = customerOrders.map(o => `${o.item} x${o.quantity} ($${o.price})`).join(', ');
       const status = customerOrders.every(o => o.status === 'Completed') ? 'Completed' :
                      customerOrders.every(o => o.status === 'Ordered') ? 'Ordered' : 'Pending';
       tr.innerHTML = `
@@ -47,13 +51,13 @@ function initSalesmanPage(enableSound=false) {
   };
 
   window.markCustomerOrdered = (customer) => {
-    orders = orders.map(o => o.salesman === email && o.customer === customer ? {...o, status:'Ordered'} : o);
+    orders = orders.map(o => o.customer === customer ? {...o, status:'Ordered'} : o);
     saveOrders(orders);
     render();
   };
 
   window.deleteCustomerOrders = (customer) => {
-    orders = orders.filter(o => !(o.salesman === email && o.customer === customer));
+    orders = orders.filter(o => o.customer !== customer);
     saveOrders(orders);
     render();
   };
@@ -65,10 +69,11 @@ function initSalesmanPage(enableSound=false) {
     const price = parseFloat(document.querySelector('#price').value || 0);
     if(!customer || !item || !quantity || isNaN(price)) return alert('Fill all fields');
 
-    orders.push({salesman: email, customer, item, quantity, price, status:'Pending'});
+    orders.push({customer, item, quantity, price, status:'Pending'});
     saveOrders(orders);
     render();
 
+    // 清空输入框
     document.querySelector('#customerName').value='';
     document.querySelector('#itemCode').value='';
     document.querySelector('#quantity').value='';
@@ -82,78 +87,5 @@ function initSalesmanPage(enableSound=false) {
     });
   });
 
-  setInterval(() => { orders = loadOrders(); render(); }, 3000);
-  render();
-}
-
-// ---------------- Admin 页面 ----------------
-function initAdminPage(enableSound=false) {
-  initOrderSound(enableSound);
-  let orders = loadOrders();
-  const tableBody = document.querySelector('#adminTable tbody');
-
-  const render = () => {
-    tableBody.innerHTML = '';
-    const grouped = orders.reduce((acc, o) => {
-      const key = `${o.salesman}||${o.customer}`;
-      if(!acc[key]) acc[key] = [];
-      acc[key].push(o);
-      return acc;
-    }, {});
-
-    Object.entries(grouped).forEach(([key, custOrders], index) => {
-      const [salesman, customer] = key.split('||');
-      const itemsStr = custOrders.map(o => `${o.item} x${o.quantity} ($${o.price.toFixed(2)})`).join(', ');
-      const status = custOrders.every(o => o.status === 'Completed') ? 'Completed' :
-                     custOrders.every(o => o.status === 'Ordered') ? 'Ordered' : 'Pending';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${salesman}</td>
-        <td>${customer}</td>
-        <td>${itemsStr}</td>
-        <td>${status}</td>
-        <td>
-          ${status !== 'Completed' ? `<button onclick="markCompleted(${index})">Mark Completed</button>` : ''}
-          <button onclick="deleteCustomerOrders('${salesman}','${customer}')">Delete Orders</button>
-        </td>
-      `;
-      tableBody.appendChild(tr);
-    });
-  };
-
-  window.markCompleted = (index) => {
-    const keys = Object.keys(orders.reduce((acc, o) => { acc[`${o.salesman}||${o.customer}`]=true; return acc; }, {}));
-    const [salesman, customer] = keys[index].split('||');
-    orders = orders.map(o => o.salesman === salesman && o.customer === customer ? {...o, status:'Completed'} : o);
-    saveOrders(orders);
-    render();
-  };
-
-  window.deleteCustomerOrders = (salesman, customer) => {
-    orders = orders.filter(o => !(o.salesman===salesman && o.customer===customer));
-    saveOrders(orders);
-    render();
-  };
-
-  document.querySelector('#markCompleted').addEventListener('click', () => {
-    orders = orders.map(o => ({...o, status:'Completed'}));
-    saveOrders(orders);
-    render();
-  });
-
-  document.querySelector('#deleteCompleted').addEventListener('click', () => {
-    orders = orders.filter(o => o.status!=='Completed');
-    saveOrders(orders);
-    render();
-  });
-
-  document.querySelector('#searchAdmin').addEventListener('input', (e) => {
-    const val = e.target.value.toLowerCase();
-    tableBody.querySelectorAll('tr').forEach(tr=>{
-      tr.style.display = Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(val)) ? '' : 'none';
-    });
-  });
-
-  setInterval(() => { orders = loadOrders(); render(); }, 3000);
   render();
 }
