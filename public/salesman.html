@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salesman Order</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Salesman Order Page</h1>
+
+<div class="input-section">
+  <input type="text" id="customerName" placeholder="Customer Name">
+  <input type="text" id="itemCode" placeholder="Item Code">
+  <input type="number" id="quantity" placeholder="Quantity" min="1">
+  <input type="number" id="price" placeholder="Price" min="0" step="0.01">
+  <button id="addOrder">Add Order</button>
+</div>
+
+<table id="orderTable">
+  <thead>
+    <tr>
+      <th>Customer</th>
+      <th>Items</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<audio id="orderSound" src="ding.mp3" preload="auto"></audio>
+
+<script type="module">
+import { pushOrder, listenOrders, updateOrderStatus, deleteOrder } from './firebase-script.js';
+
+const tableBody = document.querySelector('#orderTable tbody');
+const addBtn = document.querySelector('#addOrder');
+const myEmail = 'sheesl@sslaccessparts.com'; // 可改成不同销售员
+
+let myOrders = [];
+
+listenOrders(orders => {
+  myOrders = orders.filter(o => o.salesman === myEmail);
+  render();
+  playSoundIfPending();
+});
+
+addBtn.addEventListener('click', () => {
+  const customer = document.querySelector('#customerName').value.trim();
+  const item = document.querySelector('#itemCode').value.trim();
+  const quantity = parseInt(document.querySelector('#quantity').value, 10);
+  const price = parseFloat(document.querySelector('#price').value);
+
+  if(!customer || !item || !quantity || isNaN(price)) return alert('Fill all fields');
+
+  pushOrder({ salesman: myEmail, customer, item, quantity, price, status:'Pending' });
+
+  document.querySelector('#customerName').value='';
+  document.querySelector('#itemCode').value='';
+  document.querySelector('#quantity').value='';
+  document.querySelector('#price').value='';
+});
+
+function render() {
+  tableBody.innerHTML = '';
+  myOrders.forEach(o => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${o.customer}</td>
+      <td>${o.item} x${o.quantity} ($${o.price})</td>
+      <td>${o.status}</td>
+      <td>
+        ${o.status !== 'Completed' ? `<button onclick="markOrdered('${o.id}')">Mark Ordered</button>` : ''}
+        <button onclick="deleteCustomer('${o.id}')">Delete</button>
+      </td>`;
+    tableBody.appendChild(tr);
+  });
+}
+
+function playSoundIfPending() {
+  const pending = myOrders.some(o => o.status === 'Pending');
+  if(pending) document.getElementById('orderSound').play();
+}
+
+// 全局函数
+window.markOrdered = id => updateOrderStatus(id, 'Ordered');
+window.deleteCustomer = id => deleteOrder(id);
+</script>
+</body>
+</html>
