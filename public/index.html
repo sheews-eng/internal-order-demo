@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Internal Order</title>
-<script>
-  // 简单重定向示例，判断角色
-  const currentUserRole = 'salesman'; // 'salesman' 或 'admin' 测试用
-  if(currentUserRole === 'admin'){
-    window.location.href = 'admin.html';
-  } else {
-    window.location.href = 'salesman.html';
-  }
-</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internal Order</title>
+  <script>
+    // 简单判断身份，跳转页面
+    const email = localStorage.getItem('email') || ''; // demo 用 localStorage
+    if (email === 'sheews@sslaccessparts.com') {
+      window.location.href = './admin.html';
+    } else if (email === 'sheesl@sslaccessparts.com') {
+      window.location.href = './salesman.html';
+    } else {
+      document.body.innerHTML = '<h2>Access Denied</h2>';
+    }
+  </script>
 </head>
 <body>
 <h2>Redirecting...</h2>

@@ -4,15 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <h1>Admin Dashboard</h1>
 
-<div class="input-section">
-  <input type="text" id="searchAdmin" placeholder="Search orders by customer or item">
-  <button id="markCompleted" class="mark" onclick="orders.forEach((o,i)=>markCompleted(i))">Mark All Completed</button>
-</div>
+<input type="text" id="searchAdmin" placeholder="Search orders">
 
 <table id="adminTable">
   <thead>
@@ -21,14 +18,78 @@
       <th>Customer</th>
       <th>Items</th>
       <th>Status</th>
-      <th>Action</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<audio id="orderSound" src="ding.mp3" preload="auto"></audio>
-<script src="script.js"></script>
-<script>initAdminPage();</script>
+<audio id="orderSound" src="./ding.mp3" preload="auto"></audio>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getDatabase, ref, onChildAdded, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
+  authDomain: "internal-orders-765dd.firebaseapp.com",
+  databaseURL: "https://internal-orders-765dd-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "internal-orders-765dd",
+  storageBucket: "internal-orders-765dd.appspot.com",
+  messagingSenderId: "778145240016",
+  appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
+  measurementId: "G-H0FVWM7V1R"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const tableBody = document.querySelector('#adminTable tbody');
+const orderSound = document.getElementById('orderSound');
+
+let lastOrdersCount = 0;
+
+const ordersRef = ref(db, 'orders');
+
+// 监听实时变化
+onValue(ordersRef, snapshot => {
+  const orders = [];
+  snapshot.forEach(childSnap=>{
+    const order = childSnap.val();
+    orders.push(order);
+  });
+
+  // 播放提示音
+  if(orders.length > lastOrdersCount) orderSound.play();
+  lastOrdersCount = orders.length;
+
+  // 渲染表格
+  const searchText = document.getElementById('searchAdmin').value.toLowerCase();
+  tableBody.innerHTML = '';
+  orders.forEach(order=>{
+    if(order.customer.toLowerCase().includes(searchText) || order.salesman.toLowerCase().includes(searchText)){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${order.salesman}</td><td>${order.customer}</td><td>${order.item} x${order.quantity} ($${order.price})</td><td>${order.status}</td>`;
+      tableBody.appendChild(tr);
+    }
+  });
+});
+
+// 搜索
+document.getElementById('searchAdmin').addEventListener('input', () => {
+  ordersRef.once('value').then(snapshot=>{
+    const orders = [];
+    snapshot.forEach(childSnap=>orders.push(childSnap.val()));
+    const searchText = document.getElementById('searchAdmin').value.toLowerCase();
+    tableBody.innerHTML = '';
+    orders.forEach(order=>{
+      if(order.customer.toLowerCase().includes(searchText) || order.salesman.toLowerCase().includes(searchText)){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${order.salesman}</td><td>${order.customer}</td><td>${order.item} x${order.quantity} ($${order.price})</td><td>${order.status}</td>`;
+        tableBody.appendChild(tr);
+      }
+    });
+  });
+});
+</script>
 </body>
 </html>

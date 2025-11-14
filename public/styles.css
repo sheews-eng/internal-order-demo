@@ -1,51 +1,18 @@
 body {
   font-family: 'Segoe UI', sans-serif;
-  background-color: #f5f7fa;
-  padding: 20px;
   max-width: 900px;
   margin: auto;
-  color: #333;
+  padding: 20px;
+  background-color: #f5f7fa;
 }
-
-h1, h2 { text-align: center; }
-
-.input-section, .search-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 15px;
+h1 { text-align: center; color: #222; }
+.input-section input, #searchAdmin {
+  padding:10px; margin:5px; border-radius:6px; border:1px solid #ccc;
 }
-
-input, button {
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-button {
-  cursor: pointer;
-  border: none;
-  color: white;
-}
-
-button.add { background-color: #007bff; }
-button.mark { background-color: #28a745; }
-button.delete { background-color: #dc3545; }
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(0,0,0,0.05);
-}
-
-th, td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-}
-
-th { background: #007bff; color: white; }
-tr:nth-child(even){ background: #f9f9f9; }
+input[type=number]{width:80px;}
+button {padding:6px 12px; border-radius:6px; border:none; background:#007bff; color:#fff; cursor:pointer;}
+button:hover {background:#0056b3;}
+table {width:100%; border-collapse:collapse; margin-top:10px;}
+th, td {padding:10px; border-bottom:1px solid #eee;}
+th {background:#007bff;color:#fff;}
+tr:nth-child(even){background:#f9f9f9;}
