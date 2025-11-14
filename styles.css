@@ -1,6 +1,118 @@
-body { font-family: Arial, sans-serif; padding: 10px; max-width: 600px; margin: auto; }
-input, button { padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-button { cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
-button:hover { background-color: #0056b3; }
+/* 页面通用样式 */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+  color: #333;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #222;
+}
+
+/* 输入区域 */
+.input-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.input-section input {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  flex: 1;
+  min-width: 120px;
+  font-size: 14px;
+}
+
+.input-section button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.input-section button:hover {
+  background-color: #0056b3;
+}
+
+/* 搜索框 */
+.search-section input, #searchAdmin {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+/* 表格样式 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* 操作按钮 */
+td button {
+  padding: 5px 10px;
+  margin-right: 5px;
+  font-size: 13px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+td button:hover {
+  opacity: 0.85;
+}
+
+td button:first-child {
+  background-color: #28a745; /* 标记已完成按钮 */
+  color: white;
+}
+
+td button:last-child {
+  background-color: #dc3545; /* 删除按钮 */
+  color: white;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .input-section {
+    flex-direction: column;
+  }
+
+  table, th, td {
+    font-size: 12px;
+  }
+}
