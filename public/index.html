@@ -1,35 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Internal Order</title>
+  <meta charset="UTF-8">
+  <title>Internal Orders</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<h2>Redirecting...</h2>
-
-<script>
-  async function redirectUser() {
-    try {
-      const resp = await fetch('/cdn-cgi/access/get-identity');
-      if (!resp.ok) return;
-      const data = await resp.json();
-      const email = data.email;
-
-      if (email === 'sheews@sslaccessparts.com') {
-        window.location.href = '/admin.html';
-      } else if (email === 'sheesl@sslaccessparts.com') {
-        window.location.href = '/salesman.html';
-      } else {
-        document.body.innerHTML = '<h2>Access Denied</h2>';
-      }
-    } catch (err) {
-      console.error(err);
-      document.body.innerHTML = '<h2>Error</h2>';
-    }
-  }
-
-  redirectUser();
-</script>
+  <h1>Internal Orders System</h1>
+  <nav>
+    <a href="salesman.html">Salesman Page</a> | 
+    <a href="admin.html">Admin Page</a>
+  </nav>
 </body>
 </html>
