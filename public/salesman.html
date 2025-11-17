@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Salesman Order Page</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<title>Salesman</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Salesman Order Page</h1>
-  <form id="orderForm">
-    <input type="text" id="product" placeholder="Product" required>
+<h1>Salesman Order Page</h1>
+<form id="orderForm">
+    <input type="text" id="item" placeholder="Item" required>
     <input type="number" id="quantity" placeholder="Quantity" required>
     <button type="submit">Add Order</button>
-  </form>
-  <audio id="ding" src="ding.mp3" preload="auto"></audio>
-  <script type="module" src="firebase-script.js"></script>
-  <script src="scripts.js"></script>
+</form>
+<script type="module" src="firebase-script.js"></script>
+<script src="scripts.js"></script>
 </body>
 </html>

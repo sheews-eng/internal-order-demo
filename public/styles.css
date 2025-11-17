@@ -1,14 +1,10 @@
 body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
+    font-family: Arial, sans-serif;
+    padding: 20px;
 }
 h1 {
-  color: #333;
+    color: #333;
 }
-form input, form button {
-  margin: 5px 0;
-  padding: 8px;
-}
-button {
-  cursor: pointer;
+form input {
+    margin: 5px;
 }
