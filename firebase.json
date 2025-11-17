@@ -7,8 +7,18 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      { "source": "/admin", "destination": "/admin.html" },
-      { "source": "/salesman", "destination": "/salesman.html" }
+      {
+        "source": "/admin",
+        "destination": "/admin.html"
+      },
+      {
+        "source": "/salesman",
+        "destination": "/salesman.html"
+      },
+      {
+        "source": "/",
+        "destination": "/index.html"
+      }
     ]
   }
 }
