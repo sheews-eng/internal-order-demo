@@ -1,26 +1,17 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Admin Dashboard</h1>
-  <table border="1">
-    <thead>
-      <tr>
-        <th>Order ID</th>
-        <th>Name</th>
-        <th>Item</th>
-        <th>Quantity</th>
-        <th>Timestamp</th>
-      </tr>
-    </thead>
-    <tbody id="ordersTableBody">
-      <!-- JS 会填充这里 -->
-    </tbody>
-  </table>
-  <script type="module" src="./admin.js"></script>
+  <div id="ordersList"></div>
+
+  <audio id="ding" src="ding.mp3" preload="auto"></audio>
+
+  <script type="module" src="firebase-script.js"></script>
+  <script type="module" src="scripts.js"></script>
 </body>
 </html>

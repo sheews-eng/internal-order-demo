@@ -1,51 +1,35 @@
-// ---------------- Firebase 初始化 ----------------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { db, ref, push, onChildAdded } from './firebase-script.js';
 
-// Firebase 配置
-const firebaseConfig = {
-  apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
-  authDomain: "internal-orders-765dd.firebaseapp.com",
-  databaseURL: "https://internal-orders-765dd-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "internal-orders-765dd",
-  storageBucket: "internal-orders-765dd.firebasestorage.app",
-  messagingSenderId: "778145240016",
-  appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
-  measurementId: "G-H0FVWM7V1R"
-};
+// Add order (Salesman page)
+const orderForm = document.getElementById('orderForm');
+if (orderForm) {
+  orderForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(orderForm);
+    const orderData = {};
+    formData.forEach((value, key) => orderData[key] = value);
 
-// 初始化 Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// 订单表单提交
-const addOrderBtn = document.getElementById('addOrderBtn');
-const dingAudio = new Audio('./ding.mp3');
-
-addOrderBtn.addEventListener('click', () => {
-  const name = document.getElementById('name').value.trim();
-  const item = document.getElementById('item').value.trim();
-  const quantity = parseInt(document.getElementById('quantity').value);
-
-  if (!name || !item || !quantity) {
-    alert('请填写完整订单信息');
-    return;
-  }
-
-  const ordersRef = ref(db, 'orders');
-
-  // push 新订单
-  push(ordersRef, {
-    name,
-    item,
-    quantity,
-    timestamp: serverTimestamp()
-  }).then(() => {
-    dingAudio.play(); // 播放提示音
-    alert('订单已提交');
-    document.getElementById('orderForm').reset();
-  }).catch(err => {
-    console.error('提交失败:', err);
-    alert('提交失败，请重试');
+    push(ref(db, 'orders'), orderData)
+      .then(() => {
+        orderForm.reset();
+        const ding = document.getElementById('ding');
+        ding && ding.play();
+      })
+      .catch(console.error);
   });
-});
+}
+
+// Admin dashboard: listen for new orders
+const ordersList = document.getElementById('ordersList');
+if (ordersList) {
+  const ding = document.getElementById('ding');
+
+  onChildAdded(ref(db, 'orders'), (snapshot) => {
+    const order = snapshot.val();
+    const div = document.createElement('div');
+    div.textContent = `Item: ${order.item}, Quantity: ${order.quantity}`;
+    ordersList.appendChild(div);
+
+    ding && ding.play();
+  });
+}
