@@ -1,22 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Internal Order</title>
-  <script>
-    // 简单判断身份，跳转页面
-    const email = localStorage.getItem('email') || ''; // demo 用 localStorage
-    if (email === 'sheews@sslaccessparts.com') {
-      window.location.href = './admin.html';
-    } else if (email === 'sheesl@sslaccessparts.com') {
-      window.location.href = './salesman.html';
-    } else {
-      document.body.innerHTML = '<h2>Access Denied</h2>';
-    }
-  </script>
 </head>
 <body>
-<h2>Redirecting...</h2>
+  <h2>Welcome</h2>
+  <p><a href="./salesman.html">Salesman Page</a></p>
+  <p><a href="./admin.html">Admin Page</a></p>
 </body>
 </html>

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Salesman Order Page</title>
+<title>Salesman Order</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
+
 <h1>Salesman Order Page</h1>
 
 <div class="input-section">
@@ -19,76 +19,17 @@
 
 <table id="orderTable">
   <thead>
-    <tr>
-      <th>Customer</th>
-      <th>Items</th>
-      <th>Status</th>
-    </tr>
+    <tr><th>Customer</th><th>Items</th><th>Status</th></tr>
   </thead>
   <tbody></tbody>
 </table>
 
 <audio id="orderSound" src="./ding.mp3" preload="auto"></audio>
 
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
-  authDomain: "internal-orders-765dd.firebaseapp.com",
-  databaseURL: "https://internal-orders-765dd-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "internal-orders-765dd",
-  storageBucket: "internal-orders-765dd.appspot.com",
-  messagingSenderId: "778145240016",
-  appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
-  measurementId: "G-H0FVWM7V1R"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// 当前 salesman
-const salesmanEmail = 'sheesl@sslaccessparts.com'; // demo 固定
-
-const tableBody = document.querySelector('#orderTable tbody');
-const orderSound = document.getElementById('orderSound');
-
-document.getElementById('addOrder').addEventListener('click', () => {
-  const customer = document.getElementById('customerName').value.trim();
-  const item = document.getElementById('itemCode').value.trim();
-  const quantity = parseInt(document.getElementById('quantity').value,10);
-  const price = parseFloat(document.getElementById('price').value || 0);
-  if(!customer || !item || !quantity) return alert('Fill all fields');
-
-  push(ref(db, 'orders'), {
-    salesman: salesmanEmail,
-    customer, item, quantity, price,
-    status: 'Pending',
-    timestamp: Date.now()
-  });
-
-  // 清空表单
-  document.getElementById('customerName').value='';
-  document.getElementById('itemCode').value='';
-  document.getElementById('quantity').value='';
-  document.getElementById('price').value='';
-});
-
-// 可选：实时显示自己订单
-const ordersRef = ref(db, 'orders');
-onValue(ordersRef, snapshot => {
-  tableBody.innerHTML = '';
-  snapshot.forEach(childSnap=>{
-    const order = childSnap.val();
-    if(order.salesman !== salesmanEmail) return;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${order.customer}</td><td>${order.item} x${order.quantity} ($${order.price})</td><td>${order.status}</td>`;
-    tableBody.appendChild(tr);
-  });
-});
+<script type="module" src="./app.js"></script>
+<script>
+  window.PAGE_ROLE = "SALESMAN";
+  window.USER_EMAIL = "sheesl@sslaccessparts.com"; // 你说不要 email 这里随意写一个即可
 </script>
 </body>
 </html>
