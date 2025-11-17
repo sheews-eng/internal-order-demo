@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Salesman Order</title>
-<link rel="stylesheet" href="./style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salesman Order Page</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
 <h1>Salesman Order Page</h1>
 
 <div class="input-section">
@@ -17,19 +17,28 @@
   <button id="addOrder">Add Order</button>
 </div>
 
+<div class="search-section">
+  <input type="text" id="search" placeholder="Search orders">
+</div>
+
 <table id="orderTable">
   <thead>
-    <tr><th>Customer</th><th>Items</th><th>Status</th></tr>
+    <tr>
+      <th>Customer</th>
+      <th>Items</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<audio id="orderSound" src="./ding.mp3" preload="auto"></audio>
+<audio id="orderSound" src="ding.mp3" preload="auto"></audio>
 
-<script type="module" src="./app.js"></script>
+<script type="module" src="firebase-script.js"></script>
+<script type="module" src="scripts.js"></script>
 <script>
-  window.PAGE_ROLE = "SALESMAN";
-  window.USER_EMAIL = "sheesl@sslaccessparts.com"; // 你说不要 email 这里随意写一个即可
+  initSalesmanPage(true); // 启用提示音
 </script>
 </body>
 </html>

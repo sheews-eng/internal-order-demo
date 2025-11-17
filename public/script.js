@@ -1,131 +1,159 @@
-// ---------------- Storage ----------------
-function getOrders() {
-  return JSON.parse(localStorage.getItem('internalOrders') || '[]');
+import { db } from './firebase-script.js';
+import { ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+// 获取和存储订单
+function loadOrders() {
+    let orders = JSON.parse(localStorage.getItem('internalOrders') || '[]');
+    return orders;
 }
+
 function saveOrders(orders) {
-  localStorage.setItem('internalOrders', JSON.stringify(orders));
+    localStorage.setItem('internalOrders', JSON.stringify(orders));
 }
 
-// ---------------- Order Sound ----------------
-function initOrderSound() {
-  const audio = document.getElementById('orderSound');
-  if(!audio) return;
-  let lastPending = getOrders().filter(o=>o.status==='Pending').length;
-  setInterval(()=>{
-    const orders = getOrders();
-    const pending = orders.filter(o=>o.status==='Pending').length;
-    if(pending > lastPending) audio.play();
-    lastPending = pending;
-  },3000);
+// 提示音
+function initOrderSound(enableSound) {
+    if (!enableSound) return;
+    const audio = document.getElementById('orderSound');
+    let lastPendingCount = loadOrders().filter(o => o.status === 'Pending').length;
+
+    setInterval(() => {
+        const orders = loadOrders();
+        const pendingCount = orders.filter(o => o.status === 'Pending').length;
+        if (pendingCount > lastPendingCount && audio) audio.play();
+        lastPendingCount = pendingCount;
+    }, 5000);
 }
 
-// ---------------- Salesman Page ----------------
-function initSalesmanPage() {
-  initOrderSound();
-  const email = 'salesman@example.com';
-  let orders = getOrders();
-  const tbody = document.querySelector('#orderTable tbody');
+// Salesman 页面
+export function initSalesmanPage(enableSound = false) {
+    initOrderSound(enableSound);
+    const tableBody = document.querySelector('#orderTable tbody');
+    const email = window.CF_ACCESS_EMAIL || 'salesman';
 
-  function render(){
-    tbody.innerHTML='';
-    const myOrders = orders.filter(o=>o.salesman===email);
-    myOrders.forEach((o,i)=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${o.customer}</td>
-        <td>${o.item} x${o.quantity} ($${o.price})</td>
-        <td>${o.status}</td>
-        <td>
-          ${o.status!=='Completed'?`<button class="mark" onclick="markOrdered(${i})">Mark Ordered</button>`:''}
-          <button class="delete" onclick="deleteOrder(${i})">Delete</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+    let orders = loadOrders();
 
-  window.markOrdered = i=>{
-    orders[i].status='Ordered';
-    saveOrders(orders);
+    const render = () => {
+        tableBody.innerHTML = '';
+        const myOrders = orders.filter(o => o.salesman === email);
+        const grouped = myOrders.reduce((acc, o) => {
+            if (!acc[o.customer]) acc[o.customer] = [];
+            acc[o.customer].push(o);
+            return acc;
+        }, {});
+
+        Object.entries(grouped).forEach(([customer, custOrders]) => {
+            const tr = document.createElement('tr');
+            const itemsStr = custOrders.map(o => `${o.item} x${o.quantity} ($${o.price})`).join(', ');
+            const status = custOrders.every(o => o.status === 'Completed') ? 'Completed' :
+                           custOrders.every(o => o.status === 'Ordered') ? 'Ordered' : 'Pending';
+            tr.innerHTML = `
+                <td>${customer}</td>
+                <td>${itemsStr}</td>
+                <td>${status}</td>
+                <td>
+                  ${status !== 'Completed' ? `<button onclick="markCustomerOrdered('${customer}')">Mark Ordered</button>` : ''}
+                  <button onclick="deleteCustomerOrders('${customer}')">Delete Orders</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    };
+
+    window.addOrder = () => {
+        const customer = document.querySelector('#customerName').value.trim();
+        const item = document.querySelector('#itemCode').value.trim();
+        const quantity = parseInt(document.querySelector('#quantity').value, 10);
+        const price = parseFloat(document.querySelector('#price').value || 0);
+        if (!customer || !item || !quantity || isNaN(price)) return alert('Fill all fields');
+
+        orders.push({ salesman: email, customer, item, quantity, price, status: 'Pending' });
+        saveOrders(orders);
+        render();
+
+        document.querySelector('#customerName').value = '';
+        document.querySelector('#itemCode').value = '';
+        document.querySelector('#quantity').value = '';
+        document.querySelector('#price').value = '';
+    };
+
+    document.querySelector('#addOrder').addEventListener('click', window.addOrder);
     render();
-  };
-
-  window.deleteOrder = i=>{
-    orders.splice(i,1);
-    saveOrders(orders);
-    render();
-  };
-
-  document.querySelector('#addOrder').addEventListener('click',()=>{
-    const customer=document.querySelector('#customerName').value.trim();
-    const item=document.querySelector('#itemCode').value.trim();
-    const quantity=parseInt(document.querySelector('#quantity').value,10);
-    const price=parseFloat(document.querySelector('#price').value||0);
-    if(!customer||!item||!quantity) return alert('Fill all fields');
-    orders.push({salesman:email,customer,item,quantity,price,status:'Pending'});
-    saveOrders(orders);
-    render();
-    document.querySelector('#customerName').value='';
-    document.querySelector('#itemCode').value='';
-    document.querySelector('#quantity').value='';
-    document.querySelector('#price').value='';
-  });
-
-  render();
 }
 
-// ---------------- Admin Page ----------------
-function initAdminPage(){
-  initOrderSound();
-  let orders = getOrders();
-  const tbody = document.querySelector('#adminTable tbody');
+// Admin 页面
+export function initAdminPage(enableSound = false) {
+    initOrderSound(enableSound);
+    const tableBody = document.querySelector('#adminTable tbody');
+    let orders = loadOrders();
 
-  function render(){
-    tbody.innerHTML='';
-    const grouped = {};
-    orders.forEach(o=>{
-      const key = `${o.salesman}||${o.customer}`;
-      if(!grouped[key]) grouped[key]=[];
-      grouped[key].push(o);
+    const render = () => {
+        tableBody.innerHTML = '';
+        const grouped = orders.reduce((acc, o) => {
+            const key = `${o.salesman}||${o.customer}`;
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(o);
+            return acc;
+        }, {});
+
+        Object.entries(grouped).forEach(([key, custOrders], index) => {
+            const [salesman, customer] = key.split('||');
+            const itemsStr = custOrders.map(o => `${o.item} x${o.quantity} ($${o.price})`).join(', ');
+            const status = custOrders.every(o => o.status === 'Completed') ? 'Completed' :
+                           custOrders.every(o => o.status === 'Ordered') ? 'Ordered' : 'Pending';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${salesman}</td>
+                <td>${customer}</td>
+                <td>${itemsStr}</td>
+                <td>${status}</td>
+                <td>
+                  ${status !== 'Completed' ? `<button onclick="markCompleted(${index})">Mark Completed</button>` : ''}
+                  <button onclick="deleteCustomerOrders('${salesman}','${customer}')">Delete Orders</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    };
+
+    window.markCompleted = (index) => {
+        const keys = Object.keys(orders.reduce((acc, o) => { acc[`${o.salesman}||${o.customer}`] = true; return acc; }, {}));
+        const [salesman, customer] = keys[index].split('||');
+        orders = orders.map(o => o.salesman === salesman && o.customer === customer ? { ...o, status: 'Completed' } : o);
+        saveOrders(orders);
+        render();
+    };
+
+    window.deleteCustomerOrders = (salesman, customer) => {
+        orders = orders.filter(o => !(o.salesman === salesman && o.customer === customer));
+        saveOrders(orders);
+        render();
+    };
+
+    document.querySelector('#markCompleted').addEventListener('click', () => {
+        orders = orders.map(o => ({ ...o, status: 'Completed' }));
+        saveOrders(orders);
+        render();
     });
-    Object.entries(grouped).forEach(([key,custOrders],index)=>{
-      const [salesman,customer] = key.split('||');
-      const itemsStr = custOrders.map(o=>`${o.item} x${o.quantity} ($${o.price})`).join(', ');
-      const status = custOrders.every(o=>o.status==='Completed')?'Completed':
-                     custOrders.every(o=>o.status==='Ordered')?'Ordered':'Pending';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${salesman}</td>
-        <td>${customer}</td>
-        <td>${itemsStr}</td>
-        <td>${status}</td>
-        <td>
-          ${status!=='Completed'?`<button class="mark" onclick="markCompleted(${index})">Mark Completed</button>`:''}
-          <button class="delete" onclick="deleteCustomer('${salesman}','${customer}')">Delete</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
+
+    document.querySelector('#deleteCompleted').addEventListener('click', () => {
+        orders = orders.filter(o => o.status !== 'Completed');
+        saveOrders(orders);
+        render();
     });
-  }
 
-  window.markCompleted = index=>{
-    const keys=Object.keys(orders.reduce((acc,o)=>{acc[`${o.salesman}||${o.customer}`]=true; return acc;},{}));
-    const [salesman,customer]=keys[index].split('||');
-    orders = orders.map(o=>o.salesman===salesman && o.customer===customer?{...o,status:'Completed'}:o);
-    saveOrders(orders);
+    document.querySelector('#searchAdmin').addEventListener('input', (e) => {
+        const val = e.target.value.toLowerCase();
+        tableBody.querySelectorAll('tr').forEach(tr => {
+            tr.style.display = Array.from(tr.children).some(td => td.textContent.toLowerCase().includes(val)) ? '' : 'none';
+        });
+    });
+
     render();
-  };
 
-  window.deleteCustomer = (salesman,customer)=>{
-    orders=orders.filter(o=>!(o.salesman===salesman && o.customer===customer));
-    saveOrders(orders);
-    render();
-  };
-
-  setInterval(()=>{
-    orders = getOrders();
-    render();
-  },2000);
-
-  render();
+    // 自动刷新每 5 秒
+    setInterval(() => {
+        orders = loadOrders();
+        render();
+    }, 5000);
 }

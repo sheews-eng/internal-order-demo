@@ -1,28 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
 <h1>Admin Dashboard</h1>
 
-<input type="text" id="searchAdmin" placeholder="Search orders">
+<div class="input-section">
+  <input type="text" id="searchAdmin" placeholder="Search orders by customer or item">
+  <button id="markCompleted">Mark All Completed</button>
+  <button id="deleteCompleted">Delete Completed Orders</button>
+</div>
 
 <table id="adminTable">
   <thead>
-    <tr><th>Salesman</th><th>Customer</th><th>Items</th><th>Status</th></tr>
+    <tr>
+      <th>Salesman</th>
+      <th>Customer</th>
+      <th>Items</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<audio id="orderSound" src="./ding.mp3" preload="auto"></audio>
+<audio id="orderSound" src="ding.mp3" preload="auto"></audio>
 
-<script type="module" src="./app.js"></script>
+<script type="module" src="firebase-script.js"></script>
+<script type="module" src="scripts.js"></script>
 <script>
-  window.PAGE_ROLE = "ADMIN";
+  initAdminPage(true); // 启用提示音
 </script>
 </body>
 </html>
