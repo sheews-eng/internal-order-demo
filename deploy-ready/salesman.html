@@ -2,24 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Salesman Order Page</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Salesman Order Page</h1>
 
-  <!-- Order form -->
   <form id="orderForm">
-    <input type="text" name="item" placeholder="Item">
-    <input type="number" name="quantity" placeholder="Quantity">
+    <label>
+      Item:
+      <input type="text" id="item" required>
+    </label>
+    <label>
+      Quantity:
+      <input type="number" id="quantity" required>
+    </label>
     <button type="submit">Add Order</button>
   </form>
 
-  <!-- Audio for notification -->
-  <audio id="ding" src="/ding.mp3"></audio>
+  <audio id="dingSound" src="ding.mp3" preload="auto"></audio>
 
-  <!-- Scripts -->
-  <script type="module" src="/firebase-script.js"></script>
-  <script src="/scripts.js"></script>
+  <!-- Firebase SDK -->
+  <script type="module" src="firebase-script.js"></script>
+
+  <script>
+    // Wait for Firebase to initialize
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+    const db = getDatabase();
+
+    const form = document.getElementById('orderForm');
+    const ding = document.getElementById('dingSound');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const item = document.getElementById('item').value;
+      const quantity = parseInt(document.getElementById('quantity').value);
+
+      if (!item || !quantity) return;
+
+      try {
+        await push(ref(db, 'orders'), { item, quantity, timestamp: Date.now() });
+        // Play sound
+        ding.currentTime = 0;
+        ding.play();
+
+        // Reset form
+        form.reset();
+
+        alert('Order added!');
+      } catch (err) {
+        console.error('Error adding order:', err);
+        alert('Failed to add order.');
+      }
+    });
+  </script>
 </body>
 </html>
