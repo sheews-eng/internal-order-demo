@@ -14,6 +14,10 @@
       {
         "source": "/salesman",
         "destination": "/salesman.html"
+      },
+      {
+        "source": "/",
+        "destination": "/index.html"
       }
     ]
   }
