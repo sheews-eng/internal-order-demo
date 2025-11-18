@@ -36,11 +36,9 @@ button {
   gap: 5px;
 }
 
-/* Salesman deleted history */
-.card.history {
-  background: #f8f9fa;
-  color: #666;
-}
+/* Salesman */
+.card.pending { background-color: #fff3cd; border-color: #ffeeba; }
+.card.history { background-color: #f8f9fa; color: #666; }
 
 /* Admin status colors */
 .status-pending .card { background-color: #fff3cd; border-color: #ffeeba; }

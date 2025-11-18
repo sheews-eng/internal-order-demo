@@ -14,11 +14,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 页面类型判断
 const orderForm = document.getElementById("order-form");
 const isSalesman = orderForm !== null;
 
-// Salesman提交
 if (isSalesman) {
   orderForm.addEventListener("submit", e => {
     e.preventDefault();
@@ -38,7 +36,6 @@ if (isSalesman) {
   });
 }
 
-// 监听订单
 onValue(ref(db, "orders"), snapshot => {
   const data = snapshot.val();
   if (!data) return;
@@ -59,7 +56,7 @@ onValue(ref(db, "orders"), snapshot => {
       }
 
       const div = document.createElement("div");
-      div.className = "card";
+      div.className = "card pending";
       div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
 
       const editBtn = document.createElement("button");
@@ -81,7 +78,7 @@ onValue(ref(db, "orders"), snapshot => {
       div.appendChild(deleteBtn);
       ordersContainer.appendChild(div);
     });
-  } else { // Admin页面
+  } else { // Admin
     const containers = {
       "Pending": document.getElementById("pending-container"),
       "Ordered": document.getElementById("ordered-container"),
