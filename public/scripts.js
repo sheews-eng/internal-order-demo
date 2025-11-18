@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -33,16 +33,25 @@ if (form) {
       price: parseFloat(form.elements['price'].value),
       delivery: form.elements['delivery'].value,
       units: parseInt(form.elements['units'].value),
+      status: "Pending",
       timestamp: Date.now()
     };
 
-    push(ordersRef, data);
+    // 如果编辑模式，则更新原订单
+    if (form.dataset.editKey) {
+      const key = form.dataset.editKey;
+      update(ref(db, "orders/" + key), data);
+      delete form.dataset.editKey;
+    } else {
+      push(ordersRef, data);
+    }
+
     form.reset();
   });
 }
 
-// ---- Orders display ----
-function renderOrders(container, data, allowDelete = false) {
+// ---- Render orders ----
+function renderOrders(container, data, allowEditDelete = false, isAdmin = false) {
   container.innerHTML = "";
   if (!data) return;
 
@@ -50,15 +59,43 @@ function renderOrders(container, data, allowDelete = false) {
     const div = document.createElement("div");
     div.className = "order";
     div.innerHTML = `
-      ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}
-      ${allowDelete ? '<button class="delete-btn">Delete</button>' : ''}
+      ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} 
+      ${isAdmin ? `
+        Status: 
+        <select class="status-select">
+          <option value="Pending" ${order.status==="Pending"?"selected":""}>Pending</option>
+          <option value="Ordered" ${order.status==="Ordered"?"selected":""}>Ordered</option>
+          <option value="Completed" ${order.status==="Completed"?"selected":""}>Completed</option>
+          <option value="Pending Payment" ${order.status==="Pending Payment"?"selected":""}>Pending Payment</option>
+        </select>` : ""}
+      ${allowEditDelete ? `
+        <button class="edit-btn">Edit</button>
+        <button class="delete-btn">Delete</button>` : ""}
     `;
 
-    if (allowDelete) {
+    // Edit
+    if (allowEditDelete) {
+      div.querySelector(".edit-btn").addEventListener("click", () => {
+        form.customer.value = order.customer;
+        form.poNumber.value = order.poNumber;
+        form.itemDesc.value = order.itemDesc;
+        form.price.value = order.price;
+        form.delivery.value = order.delivery;
+        form.units.value = order.units;
+        form.dataset.editKey = key;
+      });
+
+      // Delete
       div.querySelector(".delete-btn").addEventListener("click", () => {
-        // Move to deletedOrders
         push(deletedRef, { ...order, deletedAt: Date.now() });
         remove(ref(db, "orders/" + key));
+      });
+    }
+
+    // Admin change status
+    if (isAdmin) {
+      div.querySelector(".status-select").addEventListener("change", (e) => {
+        update(ref(db, "orders/" + key), { status: e.target.value });
       });
     }
 
@@ -66,14 +103,14 @@ function renderOrders(container, data, allowDelete = false) {
   });
 }
 
-// ---- Listen for active orders ----
+// ---- Listen active orders ----
 onValue(ordersRef, snapshot => {
   const data = snapshot.val();
-  renderOrders(ordersContainer, data, !!form);
+  renderOrders(ordersContainer, data, !!form, !form);
 });
 
-// ---- Listen for deleted orders ----
+// ---- Listen deleted orders ----
 onValue(deletedRef, snapshot => {
   const data = snapshot.val();
-  renderOrders(historyContainer, data, false);
+  renderOrders(historyContainer, data, false, false);
 });
