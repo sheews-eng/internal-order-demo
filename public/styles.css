@@ -1,21 +1,23 @@
 body {
   font-family: Arial, sans-serif;
   padding: 20px;
-  background: #f0f0f0;
 }
 
 h1 {
-  color: #333;
+  margin-bottom: 20px;
 }
 
-input, button {
-  padding: 5px;
+form input {
   margin: 5px;
+  padding: 5px;
 }
 
-#ordersList div {
-  background: #fff;
-  margin: 5px 0;
-  padding: 5px;
-  border-radius: 3px;
+form button {
+  margin: 5px;
+  padding: 5px 10px;
+}
+
+.order {
+  border-bottom: 1px solid #ccc;
+  padding: 5px 0;
 }

@@ -1,9 +1,5 @@
-// 这里可以放你 Firebase Database 交互的逻辑
-console.log("scripts.js loaded");
-
-// 例如初始化 Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -18,8 +14,40 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 示例：监听 /orders 节点
+// 判断页面类型
+const isSalesman = document.getElementById("order-form") !== null;
+const ordersContainer = document.getElementById("orders-container");
+
+// Salesman: 提交订单
+if (isSalesman) {
+  const form = document.getElementById("order-form");
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const data = {
+      customer: form.customer.value,
+      item: form.item.value,
+      description: form.description.value,
+      price: parseFloat(form.price.value),
+      delivery: form.delivery.value,
+      timestamp: Date.now()
+    };
+    const ordersRef = ref(db, "orders");
+    push(ordersRef, data);
+    form.reset();
+  });
+}
+
+// Admin & Salesman: 实时显示订单
 const ordersRef = ref(db, "orders");
 onValue(ordersRef, snapshot => {
-  console.log("Orders updated:", snapshot.val());
+  const data = snapshot.val();
+  ordersContainer.innerHTML = ""; // 清空
+  if (data) {
+    Object.entries(data).forEach(([key, order]) => {
+      const div = document.createElement("div");
+      div.className = "order";
+      div.textContent = `${order.customer} | ${order.item} | ${order.description} | ${order.price} | ${order.delivery}`;
+      ordersContainer.appendChild(div);
+    });
+  }
 });

@@ -7,6 +7,15 @@
 </head>
 <body>
   <h1>Salesman Orders</h1>
+  <form id="order-form">
+    <input type="text" name="customer" placeholder="Customer" required>
+    <input type="text" name="item" placeholder="Item" required>
+    <input type="text" name="description" placeholder="Description" required>
+    <input type="number" name="price" placeholder="Price" required>
+    <input type="text" name="delivery" placeholder="Delivery Method" required>
+    <button type="submit">Add Order</button>
+  </form>
+  <div id="orders-container"></div>
   <script type="module" src="/scripts.js"></script>
 </body>
 </html>
