@@ -57,9 +57,10 @@ onValue(ref(db, "orders"), snapshot => {
 
       const div = document.createElement("div");
       div.className = "card pending";
-      div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
+      div.innerHTML = `<b>${order.customer}</b> | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
 
       const editBtn = document.createElement("button");
+      editBtn.className = "edit-btn";
       editBtn.textContent = "Edit";
       editBtn.onclick = () => {
         orderForm.customer.value = order.customer;
@@ -71,6 +72,7 @@ onValue(ref(db, "orders"), snapshot => {
       };
 
       const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
       deleteBtn.textContent = "Delete";
       deleteBtn.onclick = () => set(ref(db, `orders/${key}`), {...order, deleted:true});
 
@@ -93,7 +95,7 @@ onValue(ref(db, "orders"), snapshot => {
 
       const div = document.createElement("div");
       div.className = `card ${order.status.toLowerCase().replace(" ", "-")}`;
-      div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
+      div.innerHTML = `<b>${order.customer}</b> | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
 
       const statusSelect = document.createElement("select");
       ["Pending","Ordered","Completed","Pending Payment"].forEach(s => {
