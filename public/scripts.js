@@ -14,7 +14,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 判断页面类型
 const isSalesman = document.getElementById("order-form") !== null;
 const ordersContainer = document.getElementById("orders-container");
 
@@ -23,43 +22,45 @@ if (isSalesman) {
   const form = document.getElementById("order-form");
   form.addEventListener("submit", e => {
     e.preventDefault();
+
     const data = {
       customer: form.customer.value,
+      poNumber: form.poNumber.value,
       item: form.item.value,
       description: form.description.value,
       price: parseFloat(form.price.value),
       delivery: form.delivery.value,
+      units: parseInt(form.units.value),
       timestamp: Date.now()
     };
+
     const ordersRef = ref(db, "orders");
     push(ordersRef, data);
+
     form.reset();
   });
 }
 
-// Admin & Salesman: 实时显示订单 + 新订单音效
+// Admin & Salesman: 实时显示订单
 const ordersRef = ref(db, "orders");
-let lastOrderCount = 0;
-
 onValue(ordersRef, snapshot => {
   const data = snapshot.val();
-  ordersContainer.innerHTML = "";
-
-  const currentOrderCount = data ? Object.keys(data).length : 0;
+  ordersContainer.innerHTML = ""; // 清空
 
   if (data) {
     Object.entries(data).forEach(([key, order]) => {
       const div = document.createElement("div");
       div.className = "order";
-      div.textContent = `${order.customer} | ${order.item} | ${order.description} | ${order.price} | ${order.delivery}`;
+      div.textContent = `
+Customer: ${order.customer} | 
+PO Number: ${order.poNumber} | 
+Item: ${order.item} | 
+Description: ${order.description} | 
+Price: ${order.price} | 
+Delivery: ${order.delivery} | 
+Units: ${order.units}
+      `;
       ordersContainer.appendChild(div);
     });
   }
-
-  if (currentOrderCount > lastOrderCount) {
-    const audio = new Audio("/ding.mp3");
-    audio.play().catch(err => console.log("Audio play error:", err));
-  }
-
-  lastOrderCount = currentOrderCount;
 });
