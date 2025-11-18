@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -39,13 +39,13 @@ if (isSalesman) {
 
 // Admin & Salesman: 实时显示订单 + 新订单音效
 const ordersRef = ref(db, "orders");
-let lastOrderCount = 0; // 上一次订单数量
+let lastOrderCount = 0;
 
 onValue(ordersRef, snapshot => {
   const data = snapshot.val();
-  ordersContainer.innerHTML = ""; // 清空
+  ordersContainer.innerHTML = "";
 
-  let currentOrderCount = data ? Object.keys(data).length : 0;
+  const currentOrderCount = data ? Object.keys(data).length : 0;
 
   if (data) {
     Object.entries(data).forEach(([key, order]) => {
@@ -56,7 +56,6 @@ onValue(ordersRef, snapshot => {
     });
   }
 
-  // 播放声音：仅当订单数量增加时触发
   if (currentOrderCount > lastOrderCount) {
     const audio = new Audio("/ding.mp3");
     audio.play().catch(err => console.log("Audio play error:", err));

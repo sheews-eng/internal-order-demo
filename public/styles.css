@@ -1,23 +1,32 @@
 body {
   font-family: Arial, sans-serif;
-  padding: 20px;
+  margin: 20px;
+  background: #f0f0f0;
 }
 
 h1 {
-  margin-bottom: 20px;
+  color: #333;
 }
 
-form input {
-  margin: 5px;
-  padding: 5px;
+form input, form button {
+  display: block;
+  margin: 10px 0;
+  padding: 8px;
+  font-size: 16px;
 }
 
 form button {
-  margin: 5px;
-  padding: 5px 10px;
+  cursor: pointer;
+}
+
+#orders-container {
+  margin-top: 20px;
 }
 
 .order {
-  border-bottom: 1px solid #ccc;
-  padding: 5px 0;
+  background: #fff;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+  box-shadow: 0 0 2px #ccc;
 }
