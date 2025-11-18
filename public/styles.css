@@ -58,30 +58,29 @@ h2 {
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-button.edit-btn {
-  background-color: #f1c40f;
-  color: white;
-}
-
-button.edit-btn:hover {
-  background-color: #d4ac0d;
+input.inline-customer,
+input.inline-poNumber,
+input.inline-itemDesc,
+input.inline-price,
+input.inline-delivery,
+input.inline-units {
+  margin: 3px 0;
+  padding: 5px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid #bbb;
 }
 
 button.delete-btn {
   background-color: #e74c3c;
   color: white;
+  margin-top: 5px;
 }
 
 button.delete-btn:hover {
   background-color: #c0392b;
 }
 
-/* Salesman status */
+/* Status colors */
 .card.pending { background-color: #fff3cd; border-color: #ffeeba; }
 .card.history { background-color: #f8f9fa; color: #666; }
-
-/* Admin status colors */
-.status-pending .card { background-color: #fff3cd; border-color: #ffeeba; }
-.status-ordered .card { background-color: #cce5ff; border-color: #b8daff; }
-.status-completed .card { background-color: #d4edda; border-color: #c3e6cb; }
-.status-pending-payment .card { background-color: #f8d7da; border-color: #f5c6cb; }

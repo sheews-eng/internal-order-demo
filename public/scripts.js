@@ -57,59 +57,26 @@ onValue(ref(db, "orders"), snapshot => {
 
       const div = document.createElement("div");
       div.className = "card pending";
-      div.innerHTML = `<b>${order.customer}</b> | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
 
-      const editBtn = document.createElement("button");
-      editBtn.className = "edit-btn";
-      editBtn.textContent = "Edit";
-      editBtn.onclick = () => {
-        orderForm.customer.value = order.customer;
-        orderForm.poNumber.value = order.poNumber;
-        orderForm.itemDesc.value = order.itemDesc;
-        orderForm.price.value = order.price;
-        orderForm.delivery.value = order.delivery;
-        orderForm.units.value = order.units;
-      };
+      // Inline editable fields
+      const fields = ["customer", "poNumber", "itemDesc", "price", "delivery", "units"];
+      fields.forEach(f => {
+        const input = document.createElement("input");
+        input.value = order[f];
+        input.className = `inline-${f}`;
+        input.addEventListener("change", () => {
+          set(ref(db, `orders/${key}/${f}`), input.value);
+        });
+        div.appendChild(input);
+      });
 
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "delete-btn";
       deleteBtn.textContent = "Delete";
-      deleteBtn.onclick = () => set(ref(db, `orders/${key}`), {...order, deleted:true});
+      deleteBtn.onclick = () => set(ref(db, `orders/${key}`), { ...order, deleted: true });
 
-      div.appendChild(editBtn);
       div.appendChild(deleteBtn);
       ordersContainer.appendChild(div);
-    });
-  } else { // Admin
-    const containers = {
-      "Pending": document.getElementById("pending-container"),
-      "Ordered": document.getElementById("ordered-container"),
-      "Completed": document.getElementById("completed-container"),
-      "Pending Payment": document.getElementById("pending-payment-container")
-    };
-
-    Object.values(containers).forEach(c => c.innerHTML = "");
-
-    Object.entries(data).forEach(([key, order]) => {
-      if (order.deleted) return;
-
-      const div = document.createElement("div");
-      div.className = `card ${order.status.toLowerCase().replace(" ", "-")}`;
-      div.innerHTML = `<b>${order.customer}</b> | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
-
-      const statusSelect = document.createElement("select");
-      ["Pending","Ordered","Completed","Pending Payment"].forEach(s => {
-        const option = document.createElement("option");
-        option.value = s;
-        option.textContent = s;
-        if (order.status === s) option.selected = true;
-        statusSelect.appendChild(option);
-      });
-
-      statusSelect.onchange = (e) => set(ref(db, `orders/${key}/status`), e.target.value);
-
-      div.appendChild(statusSelect);
-      containers[order.status].appendChild(div);
     });
   }
 });
