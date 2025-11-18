@@ -1,34 +1,25 @@
-import { db, ref, push, onValue } from './firebase-script.js';
+// 这里可以放你 Firebase Database 交互的逻辑
+console.log("scripts.js loaded");
 
-// Salesman - Add Order
-const addOrderBtn = document.getElementById('addOrder');
-if(addOrderBtn){
-  addOrderBtn.addEventListener('click', () => {
-    const item = document.getElementById('item').value.trim();
-    const quantity = document.getElementById('quantity').value.trim();
-    if(item && quantity){
-      push(ref(db, 'orders'), { item, quantity, timestamp: Date.now() });
-      document.getElementById('ding').play();
-      document.getElementById('item').value = '';
-      document.getElementById('quantity').value = '';
-    }
-  });
-}
+// 例如初始化 Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
-// Admin Dashboard - Real-time Orders
-const ordersList = document.getElementById('ordersList');
-if(ordersList){
-  onValue(ref(db, 'orders'), (snapshot) => {
-    const data = snapshot.val();
-    ordersList.innerHTML = '';
-    if(data){
-      Object.values(data).forEach(order => {
-        const div = document.createElement('div');
-        div.textContent = `${order.item} - ${order.quantity}`;
-        ordersList.appendChild(div);
-      });
-    } else {
-      ordersList.textContent = 'No orders yet.';
-    }
-  });
-}
+const firebaseConfig = {
+  apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
+  authDomain: "internal-orders-765dd.firebaseapp.com",
+  databaseURL: "https://internal-orders-765dd-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "internal-orders-765dd",
+  storageBucket: "internal-orders-765dd.appspot.com",
+  messagingSenderId: "778145240016",
+  appId: "1:778145240016:web:b976e9bac38a86d3381fd5"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 示例：监听 /orders 节点
+const ordersRef = ref(db, "orders");
+onValue(ordersRef, snapshot => {
+  console.log("Orders updated:", snapshot.val());
+});
