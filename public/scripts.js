@@ -1,8 +1,7 @@
-// scripts.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
-// Firebase 配置
+// ===== Firebase 配置 =====
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
   authDomain: "internal-orders-765dd.firebaseapp.com",
@@ -16,14 +15,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ===== 页面元素 =====
+const isSalesman = document.getElementById("order-form") !== null;
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
-const form = document.getElementById("order-form");
 
-const isSalesman = form !== null;
-
-// --------------------- Salesman: 新增 & 编辑 & 删除 ---------------------
+// ===== Salesman: 提交订单 =====
 if (isSalesman) {
+  const form = document.getElementById("order-form");
   form.addEventListener("submit", e => {
     e.preventDefault();
     const data = {
@@ -33,83 +32,64 @@ if (isSalesman) {
       price: parseFloat(form.price.value),
       delivery: form.delivery.value,
       units: parseInt(form.units.value),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      status: "Pending"  // 默认状态
     };
-
-    if (form.dataset.editId) {
-      // 编辑现有订单
-      const editRef = ref(db, `orders/${form.dataset.editId}`);
-      set(editRef, data);
-      delete form.dataset.editId;
-    } else {
-      // 新订单
-      const ordersRef = ref(db, "orders");
-      push(ordersRef, data);
-    }
-
+    const ordersRef = ref(db, "orders");
+    push(ordersRef, data);
     form.reset();
   });
 }
 
-// --------------------- 显示订单 ---------------------
+// ===== Admin & Salesman: 实时显示订单 =====
 const ordersRef = ref(db, "orders");
+const historyRef = ref(db, "history");
+
 onValue(ordersRef, snapshot => {
   const data = snapshot.val();
-  ordersContainer.innerHTML = "";
+  ordersContainer.innerHTML = ""; // 清空
   if (data) {
     Object.entries(data).forEach(([key, order]) => {
       const div = document.createElement("div");
       div.className = "order";
 
+      const info = document.createElement("div");
+      info.className = "info";
+      info.innerHTML = `
+        ${order.customer} | ${order.poNumber || ""} | ${order.itemDesc} | 
+        ${order.price} | ${order.delivery} | ${order.units} | Status: 
+      `;
+      div.appendChild(info);
+
+      // ===== Salesman Buttons =====
       if (isSalesman) {
-        // Salesman 页面
-        div.innerHTML = `
-          ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} 
-          <button data-edit="${key}">Edit</button>
-          <button data-delete="${key}">Delete</button>
-        `;
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.className = "edit";
+        editBtn.onclick = () => editOrder(key, order);
 
-        div.querySelector(`[data-edit="${key}"]`).addEventListener("click", () => {
-          form.customer.value = order.customer;
-          form.poNumber.value = order.poNumber;
-          form.itemDesc.value = order.itemDesc;
-          form.price.value = order.price;
-          form.delivery.value = order.delivery;
-          form.units.value = order.units;
-          form.dataset.editId = key;
-        });
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "delete";
+        deleteBtn.onclick = () => deleteOrder(key, order);
 
-        div.querySelector(`[data-delete="${key}"]`).addEventListener("click", () => {
-          const orderRef = ref(db, `orders/${key}`);
-          push(ref(db, "history"), { ...order, deletedAt: Date.now() });
-          set(orderRef, null);
-        });
-      } else {
-        // Admin 页面
-        const status = order.status || "Pending";
-        div.innerHTML = `
-          ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} 
-          <select data-status="${key}">
-            <option ${status==="Pending"?"selected":""}>Pending</option>
-            <option ${status==="Ordered"?"selected":""}>Ordered</option>
-            <option ${status==="Completed"?"selected":""}>Completed</option>
-            <option ${status==="Pending Payment"?"selected":""}>Pending Payment</option>
-          </select>
-          <button data-delete="${key}">Delete</button>
-        `;
+        div.appendChild(editBtn);
+        div.appendChild(deleteBtn);
+      }
 
-        // 状态改变
-        div.querySelector(`[data-status="${key}"]`).addEventListener("change", e => {
-          const orderRef = ref(db, `orders/${key}`);
-          set(orderRef, { ...order, status: e.target.value });
+      // ===== Admin: 状态下拉选择 =====
+      if (!isSalesman) {
+        const statusSelect = document.createElement("select");
+        statusSelect.className = "status";
+        ["Pending", "Ordered", "Completed", "Pending Payment"].forEach(s => {
+          const option = document.createElement("option");
+          option.value = s;
+          option.textContent = s;
+          if (s === order.status) option.selected = true;
+          statusSelect.appendChild(option);
         });
-
-        // 删除
-        div.querySelector(`[data-delete="${key}"]`).addEventListener("click", () => {
-          const orderRef = ref(db, `orders/${key}`);
-          push(ref(db, "history"), { ...order, deletedAt: Date.now() });
-          set(orderRef, null);
-        });
+        statusSelect.onchange = () => update(ref(db, "orders/" + key), { status: statusSelect.value });
+        div.appendChild(statusSelect);
       }
 
       ordersContainer.appendChild(div);
@@ -117,16 +97,50 @@ onValue(ordersRef, snapshot => {
   }
 });
 
-// --------------------- 显示历史删除订单 ---------------------
-const historyRef = ref(db, "history");
+// ===== Salesman: 编辑订单 =====
+function editOrder(key, order) {
+  const customer = prompt("Customer:", order.customer);
+  if (customer === null) return;
+  const poNumber = prompt("PO Number:", order.poNumber || "");
+  if (poNumber === null) return;
+  const itemDesc = prompt("Item + Description:", order.itemDesc);
+  if (itemDesc === null) return;
+  const price = prompt("Price:", order.price);
+  if (price === null) return;
+  const delivery = prompt("Delivery:", order.delivery);
+  if (delivery === null) return;
+  const units = prompt("Units:", order.units);
+  if (units === null) return;
+
+  update(ref(db, "orders/" + key), {
+    customer,
+    poNumber,
+    itemDesc,
+    price: parseFloat(price),
+    delivery,
+    units: parseInt(units)
+  });
+}
+
+// ===== Salesman: 删除订单 =====
+function deleteOrder(key, order) {
+  // 保存到历史
+  const historyRefPush = push(historyRef);
+  set(historyRefPush, order).then(() => {
+    // 删除原订单
+    remove(ref(db, "orders/" + key));
+  });
+}
+
+// ===== Admin & Salesman: 显示历史 =====
 onValue(historyRef, snapshot => {
-  const historyData = snapshot.val();
+  const data = snapshot.val();
   historyContainer.innerHTML = "";
-  if (historyData) {
-    Object.entries(historyData).forEach(([key, order]) => {
+  if (data) {
+    Object.values(data).forEach(order => {
       const div = document.createElement("div");
-      const date = new Date(order.deletedAt).toLocaleString();
-      div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} | Deleted At: ${date}`;
+      div.className = "history-order";
+      div.textContent = `${order.customer} | ${order.poNumber || ""} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
       historyContainer.appendChild(div);
     });
   }
