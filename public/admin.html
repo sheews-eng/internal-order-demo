@@ -1,19 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  <h1>Admin Dashboard</h1>
+// Admin: 显示订单
+onValue(ordersRef, snapshot => {
+  const data = snapshot.val();
+  ordersContainer.innerHTML = "";
+  if (data) {
+    Object.entries(data).forEach(([key, order]) => {
+      const div = document.createElement("div");
+      div.className = "order";
 
-  <h2>Orders</h2>
-  <div id="orders-container"></div>
+      const status = order.status || "Pending"; // 默认状态
+      div.innerHTML = `
+        ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} 
+        <select data-status="${key}">
+          <option ${status==="Pending"?"selected":""}>Pending</option>
+          <option ${status==="Ordered"?"selected":""}>Ordered</option>
+          <option ${status==="Completed"?"selected":""}>Completed</option>
+          <option ${status==="Pending Payment"?"selected":""}>Pending Payment</option>
+        </select>
+        <button data-delete="${key}">Delete</button>
+      `;
 
-  <h2>Deleted Orders (History)</h2>
-  <div id="history-container"></div>
+      ordersContainer.appendChild(div);
 
-  <script type="module" src="/scripts.js"></script>
-</body>
-</html>
+      // 状态改变
+      div.querySelector(`[data-status="${key}"]`).addEventListener("change", e => {
+        const orderRef = ref(db, `orders/${key}`);
+        set(orderRef, { ...order, status: e.target.value });
+      });
+
+      // 删除
+      div.querySelector(`[data-delete="${key}"]`).addEventListener("click", () => {
+        const orderRef = ref(db, `orders/${key}`);
+        push(ref(db, "history"), { ...order, deletedAt: Date.now() });
+        set(orderRef, null);
+      });
+    });
+  }
+});
