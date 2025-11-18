@@ -1,4 +1,3 @@
-// scripts.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
@@ -16,85 +15,92 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 判断页面类型
-const isSalesman = document.getElementById("order-form") !== null;
+// DOM
+const form = document.getElementById("order-form");
 const ordersContainer = document.getElementById("orders-container");
+const historyContainer = document.getElementById("history-container");
+const ding = document.getElementById("ding");
 
-// ------------------ Salesman ------------------
+// 判断页面类型
+const isSalesman = form !== null;
+
+// Salesman: 提交订单
 if (isSalesman) {
-  const form = document.getElementById("order-form");
   form.addEventListener("submit", e => {
     e.preventDefault();
 
     const data = {
       customer: form.elements['customer'].value,
       poNumber: form.elements['poNumber'].value,
-      itemDesc: form.elements['itemDesc'].value, // Item + Description 合并
+      itemDesc: form.elements['itemDesc'].value,
       price: parseFloat(form.elements['price'].value),
       delivery: form.elements['delivery'].value,
       units: parseInt(form.elements['units'].value),
       timestamp: Date.now()
     };
 
-    // push 到 orders
-    push(ref(db, "orders"), data);
+    const ordersRef = ref(db, "orders");
+    push(ordersRef, data);
 
     form.reset();
   });
 }
 
-// ------------------ Admin & Salesman 实时显示订单 ------------------
+// Firebase refs
 const ordersRef = ref(db, "orders");
-onValue(ordersRef, snapshot => {
-  const data = snapshot.val();
-  if (!ordersContainer) return;
-  ordersContainer.innerHTML = ""; // 清空容器
+const historyRef = ref(db, "history");
 
-  if (data) {
-    Object.entries(data).forEach(([key, order]) => {
-      const div = document.createElement("div");
-      div.className = "order";
+// 渲染订单
+function renderOrders(dataObj) {
+  ordersContainer.innerHTML = "";
+  if (!dataObj) return;
 
-      // 显示内容
-      div.innerHTML = `
-        <b>${order.customer}</b> | PO: ${order.poNumber} | ${order.itemDesc} | Price: ${order.price} | Delivery: ${order.delivery} | Units: ${order.units}
-      `;
+  Object.entries(dataObj).forEach(([key, order]) => {
+    const div = document.createElement("div");
+    div.className = "order";
+    div.innerHTML = `
+      ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} 
+      <button data-key="${key}">Delete</button>
+    `;
+    ordersContainer.appendChild(div);
 
-      // Admin 可删除
-      if (!isSalesman) {
-        const btn = document.createElement("button");
-        btn.textContent = "Delete";
-        btn.style.marginLeft = "10px";
-        btn.addEventListener("click", () => {
-          // 移到 orders_history
-          const historyRef = ref(db, "orders_history/" + key);
-          set(historyRef, { ...order, deletedAt: Date.now() }).then(() => {
-            remove(ref(db, "orders/" + key));
-          });
-        });
-        div.appendChild(btn);
-      }
-
-      ordersContainer.appendChild(div);
-    });
-  }
-});
-
-// ------------------ 可选：显示删除历史 ------------------
-// Admin 页面可以添加一个 history-container
-const historyContainer = document.getElementById("history-container");
-if (historyContainer) {
-  const historyRef = ref(db, "orders_history");
-  onValue(historyRef, snapshot => {
-    const history = snapshot.val();
-    historyContainer.innerHTML = "";
-    if (history) {
-      Object.entries(history).forEach(([key, order]) => {
-        const div = document.createElement("div");
-        div.className = "order-history";
-        div.textContent = `[DELETED] ${order.customer} | PO: ${order.poNumber} | ${order.itemDesc} | Price: ${order.price} | Delivery: ${order.delivery} | Units: ${order.units} | DeletedAt: ${new Date(order.deletedAt).toLocaleString()}`;
-        historyContainer.appendChild(div);
+    // Delete 功能
+    div.querySelector("button").addEventListener("click", () => {
+      // 保存到 history
+      const historyEntryRef = push(historyRef);
+      set(historyEntryRef, {
+        ...order,
+        deletedAt: Date.now()
       });
-    }
+      // 删除订单
+      remove(ref(db, `orders/${key}`));
+    });
   });
 }
+
+// 渲染历史
+function renderHistory(dataObj) {
+  historyContainer.innerHTML = "";
+  if (!dataObj) return;
+
+  Object.entries(dataObj).forEach(([key, order]) => {
+    const div = document.createElement("div");
+    div.className = "history-order";
+    div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} | Deleted at: ${new Date(order.deletedAt).toLocaleString()}`;
+    historyContainer.appendChild(div);
+  });
+}
+
+// 监听实时订单 & 历史
+let firstLoad = true;
+onValue(ordersRef, snapshot => {
+  const data = snapshot.val();
+  renderOrders(data);
+
+  if (!firstLoad && data) {
+    // 播放声音
+    ding.play().catch(()=>{}); 
+  }
+  firstLoad = false;
+});
+onValue(historyRef, snapshot => renderHistory(snapshot.val()));
