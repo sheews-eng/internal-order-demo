@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
-// Firebase 配置
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
   authDomain: "internal-orders-765dd.firebaseapp.com",
@@ -15,17 +14,15 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// DOM
 const form = document.getElementById("order-form");
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
-const ding = document.getElementById("ding");
 
-// 判断页面类型
-const isSalesman = form !== null;
+const ordersRef = ref(db, "orders");
+const deletedRef = ref(db, "deletedOrders");
 
-// Salesman: 提交订单
-if (isSalesman) {
+// ---- Salesman submit ----
+if (form) {
   form.addEventListener("submit", e => {
     e.preventDefault();
 
@@ -39,68 +36,44 @@ if (isSalesman) {
       timestamp: Date.now()
     };
 
-    const ordersRef = ref(db, "orders");
     push(ordersRef, data);
-
     form.reset();
   });
 }
 
-// Firebase refs
-const ordersRef = ref(db, "orders");
-const historyRef = ref(db, "history");
+// ---- Orders display ----
+function renderOrders(container, data, allowDelete = false) {
+  container.innerHTML = "";
+  if (!data) return;
 
-// 渲染订单
-function renderOrders(dataObj) {
-  ordersContainer.innerHTML = "";
-  if (!dataObj) return;
-
-  Object.entries(dataObj).forEach(([key, order]) => {
+  Object.entries(data).forEach(([key, order]) => {
     const div = document.createElement("div");
     div.className = "order";
     div.innerHTML = `
-      ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} 
-      <button data-key="${key}">Delete</button>
+      ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}
+      ${allowDelete ? '<button class="delete-btn">Delete</button>' : ''}
     `;
-    ordersContainer.appendChild(div);
 
-    // Delete 功能
-    div.querySelector("button").addEventListener("click", () => {
-      // 保存到 history
-      const historyEntryRef = push(historyRef);
-      set(historyEntryRef, {
-        ...order,
-        deletedAt: Date.now()
+    if (allowDelete) {
+      div.querySelector(".delete-btn").addEventListener("click", () => {
+        // Move to deletedOrders
+        push(deletedRef, { ...order, deletedAt: Date.now() });
+        remove(ref(db, "orders/" + key));
       });
-      // 删除订单
-      remove(ref(db, `orders/${key}`));
-    });
+    }
+
+    container.appendChild(div);
   });
 }
 
-// 渲染历史
-function renderHistory(dataObj) {
-  historyContainer.innerHTML = "";
-  if (!dataObj) return;
-
-  Object.entries(dataObj).forEach(([key, order]) => {
-    const div = document.createElement("div");
-    div.className = "history-order";
-    div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} | Deleted at: ${new Date(order.deletedAt).toLocaleString()}`;
-    historyContainer.appendChild(div);
-  });
-}
-
-// 监听实时订单 & 历史
-let firstLoad = true;
+// ---- Listen for active orders ----
 onValue(ordersRef, snapshot => {
   const data = snapshot.val();
-  renderOrders(data);
-
-  if (!firstLoad && data) {
-    // 播放声音
-    ding.play().catch(()=>{}); 
-  }
-  firstLoad = false;
+  renderOrders(ordersContainer, data, !!form);
 });
-onValue(historyRef, snapshot => renderHistory(snapshot.val()));
+
+// ---- Listen for deleted orders ----
+onValue(deletedRef, snapshot => {
+  const data = snapshot.val();
+  renderOrders(historyContainer, data, false);
+});
