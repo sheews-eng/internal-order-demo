@@ -1,115 +1,55 @@
-/* 全局 */
 body {
-  font-family: "Segoe UI", sans-serif;
-  background-color: #f0f2f5;
-  margin: 0;
+  font-family: Arial, sans-serif;
   padding: 20px;
-  color: #333;
+  background-color: #f4f4f9;
 }
 
 h1, h2 {
-  margin-bottom: 10px;
+  color: #333;
 }
 
-/* 表单 */
-form#order-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+form input, form button, form select {
+  margin: 5px 0;
+  padding: 5px;
+  font-size: 14px;
 }
 
-form input, form select {
-  padding: 8px 10px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-form button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
+button {
   cursor: pointer;
-  transition: background-color 0.3s;
+  margin-left: 5px;
 }
 
-form button:hover {
-  background-color: #45a049;
-}
-
-/* 两栏布局 */
-.container {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.left {
-  flex: 1;
-  min-width: 250px;
-}
-
-.right {
-  flex: 2;
-  min-width: 300px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-/* 订单卡片 */
 .order, .history-order {
   border: 1px solid #ccc;
-  border-radius: 6px;
   padding: 10px;
-  margin-bottom: 10px;
-  background-color: #fff;
+  margin: 8px 0;
+  border-radius: 5px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  justify-content: space-between;
+  background-color: #fff;
 }
 
-.order .info, .history-order .info {
+.info {
   flex: 1;
 }
 
-.order .buttons button, .history-order .buttons button {
-  margin-left: 4px;
+/* 高亮动画 */
+@keyframes flash {
+  0% { background-color: #fff3cd; }
+  50% { background-color: #ffe8a1; }
+  100% { background-color: #fff3cd; }
 }
 
-button.delete {
-  background-color: #F44336;
+.order.pending {
+  animation: flash 1s infinite;
 }
 
-button.delete:hover {
-  background-color: #D32F2F;
+.order.pending-payment {
+  animation: flash 1s infinite;
 }
 
-button.edit {
-  background-color: #03A9F4;
+.history-order {
+  background-color: #f8f9fa;
+  color: #666;
 }
-
-button.edit:hover {
-  background-color: #0288D1;
-}
-
-/* 状态标签 */
-.status {
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: white;
-  text-align: center;
-}
-
-.status.Pending { background-color: #FFC107; }
-.status.Ordered { background-color: #03A9F4; }
-.status.Completed { background-color: #4CAF50; }
-.status.PendingPayment { background-color: #F44336; }
