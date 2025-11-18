@@ -36,30 +36,14 @@ button {
   gap: 5px;
 }
 
-.info {
-  font-weight: bold;
-}
-
-button, select {
-  margin-top: 5px;
-}
-
-/* 高亮动画 */
-@keyframes flash {
-  0% { background-color: #fff3cd; }
-  50% { background-color: #ffe8a1; }
-  100% { background-color: #fff3cd; }
-}
-
-.card.pending {
-  animation: flash 1s infinite;
-}
-
-.card.pending-payment {
-  animation: flash 1s infinite;
-}
-
+/* Salesman deleted history */
 .card.history {
   background: #f8f9fa;
   color: #666;
 }
+
+/* Admin status colors */
+.status-pending .card { background-color: #fff3cd; border-color: #ffeeba; }
+.status-ordered .card { background-color: #cce5ff; border-color: #b8daff; }
+.status-completed .card { background-color: #d4edda; border-color: #c3e6cb; }
+.status-pending-payment .card { background-color: #f8d7da; border-color: #f5c6cb; }

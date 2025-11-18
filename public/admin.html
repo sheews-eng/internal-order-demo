@@ -8,10 +8,17 @@
 <body>
   <h1>Admin Dashboard</h1>
 
-  <div id="orders-container"></div>
+  <h2>Pending Orders</h2>
+  <div id="pending-container" class="card-container status-pending"></div>
 
-  <h2>Deleted Orders (History)</h2>
-  <div id="history-container"></div>
+  <h2>Ordered Orders</h2>
+  <div id="ordered-container" class="card-container status-ordered"></div>
+
+  <h2>Completed Orders</h2>
+  <div id="completed-container" class="card-container status-completed"></div>
+
+  <h2>Pending Payment Orders</h2>
+  <div id="pending-payment-container" class="card-container status-pending-payment"></div>
 
   <script type="module" src="/scripts.js"></script>
 </body>
