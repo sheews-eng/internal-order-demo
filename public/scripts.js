@@ -16,12 +16,9 @@ const db = getDatabase(app);
 
 // 判断页面类型
 const isSalesman = document.getElementById("order-form") !== null;
-const isAdmin = !isSalesman;
-
 const ordersContainer = document.getElementById("orders-container");
-let lastOrderCount = 0;
 
-// Salesman 提交订单
+// Salesman: 提交订单
 if (isSalesman) {
   const form = document.getElementById("order-form");
   form.addEventListener("submit", e => {
@@ -40,22 +37,16 @@ if (isSalesman) {
   });
 }
 
-// Admin & Salesman 实时显示订单
+// Admin & Salesman: 实时显示订单 + 新订单音效
 const ordersRef = ref(db, "orders");
+let lastOrderCount = 0; // 上一次订单数量
+
 onValue(ordersRef, snapshot => {
   const data = snapshot.val();
-  const currentCount = data ? Object.keys(data).length : 0;
+  ordersContainer.innerHTML = ""; // 清空
 
-  // 🔊 Admin 新订单提示音
-  if (isAdmin && currentCount > lastOrderCount) {
-    const ding = document.getElementById("ding");
-    ding.play().catch(e => console.log("Audio play blocked:", e));
-  }
+  let currentOrderCount = data ? Object.keys(data).length : 0;
 
-  lastOrderCount = currentCount;
-
-  // 显示订单
-  ordersContainer.innerHTML = "";
   if (data) {
     Object.entries(data).forEach(([key, order]) => {
       const div = document.createElement("div");
@@ -64,4 +55,12 @@ onValue(ordersRef, snapshot => {
       ordersContainer.appendChild(div);
     });
   }
+
+  // 播放声音：仅当订单数量增加时触发
+  if (currentOrderCount > lastOrderCount) {
+    const audio = new Audio("/ding.mp3");
+    audio.play().catch(err => console.log("Audio play error:", err));
+  }
+
+  lastOrderCount = currentOrderCount;
 });
