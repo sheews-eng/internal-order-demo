@@ -17,11 +17,10 @@ const db = getDatabase(app);
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
 
-// 判断是否是Salesman页面
 const orderForm = document.getElementById("order-form");
 const isSalesman = orderForm !== null;
 
-// Salesman 提交订单
+// Salesman提交
 if (isSalesman) {
   orderForm.addEventListener("submit", e => {
     e.preventDefault();
@@ -36,87 +35,76 @@ if (isSalesman) {
       deleted: false,
       timestamp: Date.now()
     };
-    const ordersRef = ref(db, "orders");
-    push(ordersRef, data);
+    push(ref(db, "orders"), data);
     orderForm.reset();
   });
 }
 
 // 监听订单
-const ordersRef = ref(db, "orders");
-onValue(ordersRef, snapshot => {
+onValue(ref(db, "orders"), snapshot => {
   const data = snapshot.val();
   ordersContainer.innerHTML = "";
   historyContainer.innerHTML = "";
 
-  if (data) {
-    Object.entries(data).forEach(([key, order]) => {
-      // 历史订单
-      if (order.deleted) {
-        const div = document.createElement("div");
-        div.className = "history-order";
-        div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
-        historyContainer.appendChild(div);
-        return;
-      }
+  if (!data) return;
 
+  Object.entries(data).forEach(([key, order]) => {
+    // 历史订单
+    if (order.deleted) {
       const div = document.createElement("div");
-      div.className = "order";
+      div.className = "card history";
+      div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
+      historyContainer.appendChild(div);
+      return;
+    }
 
-      // 信息展示
-      const infoDiv = document.createElement("div");
-      infoDiv.className = "info";
-      infoDiv.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
+    const div = document.createElement("div");
+    div.className = "card";
 
-      // Salesman 编辑按钮
-      if (isSalesman) {
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.onclick = () => {
-          orderForm.customer.value = order.customer;
-          orderForm.poNumber.value = order.poNumber;
-          orderForm.itemDesc.value = order.itemDesc;
-          orderForm.price.value = order.price;
-          orderForm.delivery.value = order.delivery;
-          orderForm.units.value = order.units;
-        };
-        div.appendChild(editBtn);
-      }
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "info";
+    infoDiv.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
+    div.appendChild(infoDiv);
 
-      // 删除按钮
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "Delete";
-      deleteBtn.onclick = () => {
-        set(ref(db, `orders/${key}`), {...order, deleted:true});
+    // 删除按钮
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.onclick = () => set(ref(db, `orders/${key}`), {...order, deleted:true});
+    div.appendChild(deleteBtn);
+
+    // Salesman 编辑
+    if (isSalesman) {
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "Edit";
+      editBtn.onclick = () => {
+        orderForm.customer.value = order.customer;
+        orderForm.poNumber.value = order.poNumber;
+        orderForm.itemDesc.value = order.itemDesc;
+        orderForm.price.value = order.price;
+        orderForm.delivery.value = order.delivery;
+        orderForm.units.value = order.units;
       };
+      div.appendChild(editBtn);
+    }
 
-      div.appendChild(infoDiv);
-      div.appendChild(deleteBtn);
-
-      // Admin 状态管理
-      if (!isSalesman) {
-        const statusSelect = document.createElement("select");
-        ["Pending","Ordered","Completed","Pending Payment"].forEach(s => {
-          const option = document.createElement("option");
-          option.value = s;
-          option.textContent = s;
-          if (order.status === s) option.selected = true;
-          statusSelect.appendChild(option);
-        });
-
-        // 高亮样式
-        div.classList.remove("pending","pending-payment");
-        if(order.status === "Pending") div.classList.add("pending");
-        if(order.status === "Pending Payment") div.classList.add("pending-payment");
-
-        statusSelect.addEventListener("change", e => {
-          set(ref(db, `orders/${key}/status`), e.target.value);
-        });
-
-        div.appendChild(statusSelect);
-      }
-
-      ordersContainer.appendChild(div);
+    // Admin / Salesman 都可编辑状态
+    const statusSelect = document.createElement("select");
+    ["Pending","Ordered","Completed","Pending Payment"].forEach(s => {
+      const option = document.createElement("option");
+      option.value = s;
+      option.textContent = s;
+      if (order.status === s) option.selected = true;
+      statusSelect.appendChild(option);
     });
-  }
+
+    statusSelect.onchange = (e) => set(ref(db, `orders/${key}/status`), e.target.value);
+
+    // 高亮
+    div.classList.remove("pending","pending-payment");
+    if(order.status === "Pending") div.classList.add("pending");
+    if(order.status === "Pending Payment") div.classList.add("pending-payment");
+
+    div.appendChild(statusSelect);
+    ordersContainer.appendChild(div);
+  });
 });

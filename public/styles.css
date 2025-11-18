@@ -1,16 +1,16 @@
 body {
   font-family: Arial, sans-serif;
+  background: #f4f4f9;
   padding: 20px;
-  background-color: #f4f4f9;
 }
 
 h1, h2 {
   color: #333;
 }
 
-form input, form button, form select {
-  margin: 5px 0;
-  padding: 5px;
+.order-form input, .order-form button, select {
+  margin: 5px 5px 5px 0;
+  padding: 5px 10px;
   font-size: 14px;
 }
 
@@ -19,19 +19,29 @@ button {
   margin-left: 5px;
 }
 
-.order, .history-order {
-  border: 1px solid #ccc;
-  padding: 10px;
-  margin: 8px 0;
-  border-radius: 5px;
+.card-container {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: #fff;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .info {
-  flex: 1;
+  font-weight: bold;
+}
+
+button, select {
+  margin-top: 5px;
 }
 
 /* 高亮动画 */
@@ -41,15 +51,15 @@ button {
   100% { background-color: #fff3cd; }
 }
 
-.order.pending {
+.card.pending {
   animation: flash 1s infinite;
 }
 
-.order.pending-payment {
+.card.pending-payment {
   animation: flash 1s infinite;
 }
 
-.history-order {
-  background-color: #f8f9fa;
+.card.history {
+  background: #f8f9fa;
   color: #666;
 }
