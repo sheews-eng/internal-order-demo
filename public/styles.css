@@ -1,131 +1,115 @@
-/* ===== General Styles ===== */
+/* 全局 */
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
-  margin: 20px;
-}
-
-h1 {
+  font-family: "Segoe UI", sans-serif;
+  background-color: #f0f2f5;
+  margin: 0;
+  padding: 20px;
   color: #333;
 }
 
-h2 {
-  margin-top: 30px;
-  color: #444;
+h1, h2 {
+  margin-bottom: 10px;
 }
 
-/* ===== Form Styles ===== */
+/* 表单 */
 form#order-form {
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  max-width: 500px;
-}
-
-form#order-form input,
-form#order-form select,
-form#order-form button {
-  margin: 5px 0;
-  padding: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-form#order-form button {
-  background-color: #4CAF50;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  border: none;
-  transition: 0.3s;
-}
-
-form#order-form button:hover {
-  background-color: #45a049;
-}
-
-/* ===== Orders List ===== */
-#orders-container,
-#history-container {
-  margin-top: 15px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.order,
-.history-order {
-  background-color: #fff;
-  padding: 10px 15px;
-  border-radius: 6px;
-  border-left: 4px solid #4CAF50;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.order .info,
-.history-order .info {
-  flex: 1;
-  min-width: 200px;
-}
-
-.order button,
-.history-order button {
-  margin-left: 5px;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  color: white;
-}
-
-.order button.edit {
-  background-color: #2196F3;
-}
-
-.order button.edit:hover {
-  background-color: #1976D2;
-}
-
-.order button.delete {
-  background-color: #f44336;
-}
-
-.order button.delete:hover {
-  background-color: #d32f2f;
-}
-
-.history-order {
-  border-left: 4px solid #f44336;
-}
-
-/* ===== Admin Status Dropdown ===== */
-.order select.status {
-  padding: 5px;
+form input, form select {
+  padding: 8px 10px;
   border-radius: 4px;
   border: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+form button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+form button:hover {
+  background-color: #45a049;
+}
+
+/* 两栏布局 */
+.container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.left {
+  flex: 1;
+  min-width: 250px;
+}
+
+.right {
+  flex: 2;
+  min-width: 300px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* 订单卡片 */
+.order, .history-order {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.order .info, .history-order .info {
+  flex: 1;
+}
+
+.order .buttons button, .history-order .buttons button {
+  margin-left: 4px;
+}
+
+button.delete {
+  background-color: #F44336;
+}
+
+button.delete:hover {
+  background-color: #D32F2F;
+}
+
+button.edit {
+  background-color: #03A9F4;
+}
+
+button.edit:hover {
+  background-color: #0288D1;
+}
+
+/* 状态标签 */
+.status {
   font-weight: bold;
-  margin-left: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  text-align: center;
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 600px) {
-  .order,
-  .history-order {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .order button,
-  .history-order button,
-  .order select.status {
-    margin-top: 5px;
-    margin-left: 0;
-  }
-}
+.status.Pending { background-color: #FFC107; }
+.status.Ordered { background-color: #03A9F4; }
+.status.Completed { background-color: #4CAF50; }
+.status.PendingPayment { background-color: #F44336; }

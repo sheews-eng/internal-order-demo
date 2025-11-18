@@ -7,23 +7,25 @@
 </head>
 <body>
   <h1>Salesman Order Form</h1>
-
-  <form id="order-form">
-    Customer: <input type="text" name="customer" required><br>
-    PO Number: <input type="text" name="poNumber" required><br>
-    Item + Description: <input type="text" name="itemDesc" required><br>
-    Price: <input type="number" name="price" step="0.01" required><br>
-    Delivery: <input type="text" name="delivery" required><br>
-    Units: <input type="number" name="units" required><br>
-    <button type="submit">Submit</button>
-  </form>
-
-  <h2>Orders</h2>
-  <div id="orders-container"></div>
-
-  <h2>Deleted Orders (History)</h2>
-  <div id="history-container"></div>
-
+  <div class="container">
+    <div class="left">
+      <form id="order-form">
+        Customer: <input type="text" name="customer" required><br>
+        PO Number: <input type="text" name="poNumber" required><br>
+        Item + Description: <input type="text" name="itemDesc" required><br>
+        Price: <input type="number" name="price" step="0.01" required><br>
+        Delivery: <input type="text" name="delivery" required><br>
+        Units: <input type="number" name="units" required><br>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+    <div class="right">
+      <h2>Orders</h2>
+      <div id="orders-container"></div>
+      <h2>Deleted Orders (History)</h2>
+      <div id="history-container"></div>
+    </div>
+  </div>
   <script type="module" src="/scripts.js"></script>
 </body>
 </html>

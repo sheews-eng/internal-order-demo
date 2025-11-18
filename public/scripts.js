@@ -21,7 +21,7 @@ const historyContainer = document.getElementById("history-container");
 const ordersRef = ref(db, "orders");
 const historyRef = ref(db, "history");
 
-// Salesman: 提交订单
+// Salesman: submit / edit / delete
 if (isSalesman) {
   const form = document.getElementById("order-form");
   form.addEventListener("submit", e => {
@@ -40,32 +40,7 @@ if (isSalesman) {
   });
 }
 
-// 编辑订单
-function editOrder(key, order) {
-  const customer = prompt("Customer:", order.customer);
-  const poNumber = prompt("PO Number:", order.poNumber);
-  const itemDesc = prompt("Item + Description:", order.itemDesc);
-  const price = prompt("Price:", order.price);
-  const delivery = prompt("Delivery:", order.delivery);
-  const units = prompt("Units:", order.units);
-
-  if (customer && poNumber && itemDesc) {
-    update(ref(db, "orders/" + key), {
-      customer, poNumber, itemDesc,
-      price: parseFloat(price),
-      delivery, units: parseInt(units)
-    });
-  }
-}
-
-// 删除订单并存入历史
-function deleteOrder(key, order) {
-  const timestamp = Date.now();
-  set(ref(db, "history/" + timestamp), order);
-  remove(ref(db, "orders/" + key));
-}
-
-// 实时显示订单
+// Render Orders
 onValue(ordersRef, snapshot => {
   const data = snapshot.val();
   ordersContainer.innerHTML = "";
@@ -75,47 +50,56 @@ onValue(ordersRef, snapshot => {
       div.className = "order";
 
       const info = document.createElement("div");
-      info.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
+      info.className = "info";
+      info.innerHTML = `
+        <strong>${order.customer}</strong> | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}
+      `;
+
+      const buttons = document.createElement("div");
+      buttons.className = "buttons";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Delete";
+      deleteBtn.className = "delete";
+      deleteBtn.onclick = () => {
+        push(historyRef, { ...order, deletedAt: Date.now() });
+        remove(ref(db, "orders/" + key));
+      };
+
+      buttons.appendChild(deleteBtn);
       div.appendChild(info);
-
-      if (isSalesman) {
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.onclick = () => editOrder(key, order);
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.onclick = () => deleteOrder(key, order);
-
-        div.appendChild(editBtn);
-        div.appendChild(deleteBtn);
-      } else { // Admin
-        const statusSelect = document.createElement("select");
-        ["Pending", "Ordered", "Completed", "Pending Payment"].forEach(s => {
-          const opt = document.createElement("option");
-          opt.value = s;
-          opt.textContent = s;
-          if (s === order.status) opt.selected = true;
-          statusSelect.appendChild(opt);
-        });
-        statusSelect.onchange = () => update(ref(db, "orders/" + key), { status: statusSelect.value });
-        div.appendChild(statusSelect);
-      }
-
+      div.appendChild(buttons);
       ordersContainer.appendChild(div);
+
+      // Admin Status Dropdown
+      if (!isSalesman) {
+        const statusSelect = document.createElement("select");
+        ["Pending","Ordered","Completed","Pending Payment"].forEach(s => {
+          const option = document.createElement("option");
+          option.value = s;
+          option.textContent = s;
+          if(order.status === s) option.selected = true;
+          statusSelect.appendChild(option);
+        });
+        statusSelect.onchange = () => update(ref(db, "orders/" + key), {status: statusSelect.value});
+        buttons.appendChild(statusSelect);
+      }
     });
   }
 });
 
-// 实时显示历史订单
-onValue(historyRef, snapshot => {
-  const data = snapshot.val();
-  historyContainer.innerHTML = "";
-  if (data) {
-    Object.entries(data).forEach(([key, order]) => {
-      const div = document.createElement("div");
-      div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
-      historyContainer.appendChild(div);
-    });
-  }
-});
+// Render History
+if (historyContainer) {
+  onValue(historyRef, snapshot => {
+    const data = snapshot.val();
+    historyContainer.innerHTML = "";
+    if (data) {
+      Object.entries(data).forEach(([key, order]) => {
+        const div = document.createElement("div");
+        div.className = "history-order";
+        div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}`;
+        historyContainer.appendChild(div);
+      });
+    }
+  });
+}
