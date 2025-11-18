@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -16,6 +16,7 @@ const db = getDatabase(app);
 
 const isSalesman = document.getElementById("order-form") !== null;
 const ordersContainer = document.getElementById("orders-container");
+const historyContainer = document.getElementById("history-container");
 const dingSound = document.getElementById("ding-sound");
 let previousOrders = {};
 
@@ -28,47 +29,72 @@ if (isSalesman) {
     const data = {
       customer: form.customer.value,
       poNumber: form.poNumber.value,
-      item: form.item.value,
-      description: form.description.value,
+      itemDesc: form.itemDesc.value,
       price: parseFloat(form.price.value),
       delivery: form.delivery.value,
       units: parseInt(form.units.value),
       timestamp: Date.now()
     };
 
-    const ordersRef = ref(db, "orders");
-    push(ordersRef, data);
-
+    push(ref(db, "orders"), data);
     form.reset();
   });
 }
 
 // Admin & Salesman: 实时显示订单
 const ordersRef = ref(db, "orders");
+const historyRef = ref(db, "history");
+
 onValue(ordersRef, snapshot => {
   const data = snapshot.val() || {};
-  ordersContainer.innerHTML = ""; // 清空
+  ordersContainer.innerHTML = "";
 
   Object.entries(data).forEach(([key, order]) => {
     const div = document.createElement("div");
     div.className = "order";
-    div.textContent = `
-Customer: ${order.customer} | 
-PO Number: ${order.poNumber} | 
-Item: ${order.item} | 
-Description: ${order.description} | 
-Price: ${order.price} | 
-Delivery: ${order.delivery} | 
-Units: ${order.units}
+    div.innerHTML = `
+      <strong>${order.customer}</strong> | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}
+      ${!isSalesman ? `<button data-key="${key}" class="delete-btn">Delete</button>` : ""}
     `;
     ordersContainer.appendChild(div);
   });
 
-  // Admin 播放声音（只在新订单时）
+  // 播放提示音
   const newKeys = Object.keys(data).filter(k => !previousOrders[k]);
   if (newKeys.length > 0 && previousOrders && dingSound) {
     dingSound.play();
   }
 
   previousOrders = data;
+
+  // 删除订单
+  if (!isSalesman) {
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const key = btn.dataset.key;
+        const order = data[key];
+
+        // 移动到 history
+        await push(historyRef, order);
+        // 删除原订单
+        await remove(ref(db, "orders/" + key));
+      };
+    });
+  }
+});
+
+// 显示历史订单
+onValue(historyRef, snapshot => {
+  const data = snapshot.val() || {};
+  if (historyContainer) {
+    historyContainer.innerHTML = "";
+    Object.entries(data).forEach(([key, order]) => {
+      const div = document.createElement("div");
+      div.className = "order-history";
+      div.textContent = `
+        ${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units}
+      `;
+      historyContainer.appendChild(div);
+    });
+  }
 });

@@ -1,21 +1,6 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
-}
-
-h1 {
-  color: #333;
-}
-
-form label {
-  display: block;
-  margin-bottom: 10px;
-}
-
-.order {
-  border: 1px solid #ccc;
-  padding: 8px;
-  margin-bottom: 6px;
-  border-radius: 4px;
-  background: #f9f9f9;
-}
+body { font-family: Arial, sans-serif; margin: 20px; }
+h1, h2 { color: #333; }
+form label { display: block; margin-bottom: 10px; }
+button { margin-left: 10px; }
+.order { border: 1px solid #ccc; padding: 8px; margin-bottom: 6px; border-radius: 4px; background: #f9f9f9; }
+.order-history { border: 1px dashed #999; padding: 6px; margin-bottom: 4px; border-radius: 4px; background: #f4f4f4; font-size: 0.9em; }
