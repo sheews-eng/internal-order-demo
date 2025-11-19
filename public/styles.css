@@ -11,6 +11,18 @@ h1, h2 {
   margin-bottom: 15px;
 }
 
+/* --- 新增：订单分组标题样式 --- */
+/* 用于 Admin/Salesman 页面中区分不同状态的 H3 标题 */
+#orders-container h3 {
+  text-align: center;
+  width: 100%;
+  color: #2c3e50;
+  border-bottom: 2px solid #3498db;
+  padding: 5px;
+  margin: 20px 0 10px 0;
+  font-size: 1.5em;
+}
+
 .order-form input, .order-form button, select {
   margin: 5px 5px 10px 0;
   padding: 7px 12px;
@@ -32,11 +44,21 @@ h1, h2 {
 }
 
 .card-container {
+  /* 使用 grid 布局可以更好地控制卡片在标题下的排列 */
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   justify-content: center;
 }
+
+/* 确保主 orders-container 可以容纳块级元素如 h3 */
+#orders-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
 
 .card {
   background: #fff;
@@ -59,17 +81,29 @@ span {
   margin: 2px 0;
 }
 
+/* --- 新增：订单卡片内字段标签样式 --- */
+/* 使得 JS 中创建的 <span style="font-weight: bold; color: #555;">...</span> 结构无需内联样式 */
+.card span > span:first-child {
+  font-weight: bold;
+  color: #555;
+  margin-right: 5px;
+}
+
 button {
   margin-top: 5px;
   border-radius: 5px;
   padding: 5px 10px;
   cursor: pointer;
+  border: none;
+  color: white; /* 确保所有按钮文字颜色为白色 */
 }
 
+/* 通用按钮悬停效果 */
 button:hover {
   opacity: 0.9;
 }
 
+/* 历史订单卡片样式 */
 .card.history {
   background-color: #f8f9fa;
   color: #666;

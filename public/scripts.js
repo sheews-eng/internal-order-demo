@@ -28,12 +28,8 @@ const statusColors = {
 };
 
 // --- 提示音和状态变量 (用于管理员页面) ---
-// 1. 播放声音的 Audio 对象，确保 ding.mp3 位于项目根目录
 const notificationSound = new Audio('/ding.mp3'); 
-
-// 2. 跟踪订单总数的变量，用于判断是否有新订单
 let lastOrderCount = 0;
-// 3. 首次加载标志，用于避免页面首次加载时播放声音
 let isInitialLoad = true;
 
 // --- 音频解锁逻辑 (仅限 Admin 页面) ---
@@ -41,23 +37,19 @@ if (!isSalesman) {
     document.addEventListener('click', function unlockAudio() {
         const promptElement = document.getElementById('audio-prompt-text');
         
-        // 尝试播放一次，让浏览器允许后续自动播放
         notificationSound.play().then(() => {
-            // 播放成功，说明音频已解锁
             console.log("Audio playback unlocked.");
             if (promptElement) {
-                promptElement.style.display = 'none'; // 隐藏提示
+                promptElement.style.display = 'none';
             }
-            // 移除监听器
             document.removeEventListener('click', unlockAudio);
         }).catch(error => {
             console.warn("Audio unlock failed, waiting for user interaction:", error);
         });
         
-        // 确保 audio.play() 始终从头开始，并立即停止，不发出声音
         notificationSound.pause();
         notificationSound.currentTime = 0;
-    }, { once: true }); // 只监听一次点击
+    }, { once: true });
 }
 
 
@@ -82,7 +74,6 @@ function createOrderCard(key, order, isSalesmanPage) {
     // 1. 基础字段显示 (UX 改进: 添加字段标签)
     fields.forEach(f => {
         const span = document.createElement("span");
-        // 使用 innerHTML 方便格式化字段标签
         span.innerHTML = `<span style="font-weight: bold; color: #555;">${f.label}:</span> ${order[f.key]}`;
         div.appendChild(span);
     });
@@ -95,6 +86,20 @@ function createOrderCard(key, order, isSalesmanPage) {
         timeSpan.style.color = "#777";
         timeSpan.textContent = `Deleted: ${new Date(order.timestamp).toLocaleString()}`;
         div.appendChild(timeSpan);
+
+        // 新增：永久删除按钮 (对 Salesman 和 Admin 均可见)
+        const permDeleteBtn = document.createElement("button");
+        permDeleteBtn.textContent = "Permanently Delete";
+        permDeleteBtn.style.backgroundColor = "#c0392b"; // 深红色
+        permDeleteBtn.style.marginTop = "10px";
+        permDeleteBtn.style.width = "100%"; // 按钮占满宽度
+
+        permDeleteBtn.addEventListener("click", () => {
+            if (confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
+                remove(ref(db, `orders/${key}`));
+            }
+        });
+        div.appendChild(permDeleteBtn);
         return div;
     }
 
@@ -141,13 +146,11 @@ function createOrderCard(key, order, isSalesmanPage) {
           form.customer.value = order.customer;
           form.poNumber.value = order.poNumber;
           form.itemDesc.value = order.itemDesc;
-          // 移除 "RM "
           form.price.value = order.price.replace("RM ", "");
-          
-          // ❗ 修复: 确保设置到 number 输入框的值是数字
-          form.units.value = parseInt(order.units) || 1; 
-
           form.delivery.value = order.delivery;
+          
+          // 修复：确保设置到 number 输入框的值是数字
+          form.units.value = parseInt(order.units) || 1; 
           
           // 删除旧订单，准备提交新订单
           remove(ref(db, `orders/${key}`));
@@ -179,13 +182,10 @@ if (isSalesman) {
       customer: form.customer.value,
       poNumber: form.poNumber.value,
       itemDesc: form.itemDesc.value,
-      // 保持价格格式化
       price: `RM ${parseFloat(form.price.value).toFixed(2)}`, 
       delivery: form.delivery.value,
-      
-      // ❗ 修复: 强制将 units 转换为整数进行存储
+      // 强制将 units 转换为整数进行存储
       units: parseInt(form.units.value) || 1, 
-
       status: "Pending",
       deleted: false,
       timestamp: Date.now() // 记录时间戳
@@ -196,54 +196,78 @@ if (isSalesman) {
   });
 }
 
-// --- Admin & Salesman: 显示订单 (包含提示音逻辑) ---
+// --- Admin & Salesman: 显示订单 (包含提示音逻辑和新的分组逻辑) ---
 onValue(ref(db, "orders"), snapshot => {
   const data = snapshot.val();
   ordersContainer.innerHTML = "";
   historyContainer.innerHTML = "";
 
-  // 计算当前订单总数
+  // 计算当前订单总数 (用于提示音)
   const currentTotalOrders = data ? Object.keys(data).length : 0;
 
   // --- 提示音逻辑 ---
   if (!isSalesman && !isInitialLoad && currentTotalOrders > lastOrderCount) {
-    // 播放提示音
     notificationSound.play().catch(error => {
         console.warn("Could not play notification sound. User interaction may be required:", error);
     });
   }
 
-  // 更新订单计数
   lastOrderCount = currentTotalOrders;
-
-  // 标记首次加载完成
   isInitialLoad = false;
   // -------------------------
 
   if (!data) return;
 
-  // 保持分组逻辑
-  const grouped = {
-    "Pending": [],
-    "Ordered": [],
-    "Completed": [],
-    "Pending Payment": []
-  };
+  // 1. 定义分组和显示顺序 (根据页面类型)
+  let grouped = {};
+  let statusOrder = [];
 
+  if (isSalesman) {
+      // Salesman 页面：保持原有顺序和所有状态
+      statusOrder = ["Pending", "Ordered", "Completed", "Pending Payment"];
+      grouped = { "Pending": [], "Ordered": [], "Completed": [], "Pending Payment": [] };
+  } else { 
+      // Admin 页面：按要求分组和排序，排除 Pending
+      statusOrder = ["Completed", "Pending Payment", "Ordered"];
+      grouped = { "Completed": [], "Pending Payment": [], "Ordered": [] };
+  }
+
+  // 2. 遍历数据并填充分组
   Object.entries(data).forEach(([key, order]) => {
-    // 忽略已删除订单
     if (order.deleted) {
       historyContainer.appendChild(createOrderCard(key, order, isSalesman));
       return;
     }
-    // 根据状态进行分组
-    grouped[order.status].push({ key, order });
+    
+    // 仅对当前页面需要的状态进行分组 (Admin 页面会跳过 Pending)
+    if (grouped[order.status]) {
+      grouped[order.status].push({ key, order });
+    }
   });
 
-  // 按状态显示订单
-  Object.keys(grouped).forEach(status => {
-    grouped[status].forEach(({ key, order }) => {
-        ordersContainer.appendChild(createOrderCard(key, order, isSalesman));
-    });
+  // 3. 按分组顺序显示订单 (使用 Header 分组)
+  statusOrder.forEach(status => {
+      if (grouped[status].length > 0) {
+          // 创建一个标题 (Header)
+          const groupHeader = document.createElement("h3");
+          groupHeader.textContent = status;
+          groupHeader.style.textAlign = "center";
+          groupHeader.style.width = "100%"; // 确保标题独占一行
+          groupHeader.style.marginTop = "20px";
+          groupHeader.style.padding = "5px";
+          groupHeader.style.borderBottom = "2px solid #3498db";
+          ordersContainer.appendChild(groupHeader);
+          
+          // 创建一个包裹卡片的容器，确保卡片能像之前一样布局
+          const groupCardContainer = document.createElement("div");
+          // 重用 .card-container 样式
+          groupCardContainer.className = "card-container"; 
+          
+          grouped[status].forEach(({ key, order }) => {
+              groupCardContainer.appendChild(createOrderCard(key, order, isSalesman));
+          });
+          
+          ordersContainer.appendChild(groupCardContainer);
+      }
   });
 });
