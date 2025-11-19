@@ -36,7 +36,7 @@ let lastOrderCount = 0;
 // 3. 首次加载标志，用于避免页面首次加载时播放声音
 let isInitialLoad = true;
 
-// --- 新增: 音频解锁逻辑 (仅限 Admin 页面) ---
+// --- 音频解锁逻辑 (仅限 Admin 页面) ---
 if (!isSalesman) {
     document.addEventListener('click', function unlockAudio() {
         const promptElement = document.getElementById('audio-prompt-text');
@@ -143,8 +143,11 @@ function createOrderCard(key, order, isSalesmanPage) {
           form.itemDesc.value = order.itemDesc;
           // 移除 "RM "
           form.price.value = order.price.replace("RM ", "");
+          
+          // ❗ 修复: 确保设置到 number 输入框的值是数字
+          form.units.value = parseInt(order.units) || 1; 
+
           form.delivery.value = order.delivery;
-          form.units.value = order.units;
           
           // 删除旧订单，准备提交新订单
           remove(ref(db, `orders/${key}`));
@@ -167,7 +170,7 @@ function createOrderCard(key, order, isSalesmanPage) {
 }
 
 
-// --- Salesman 功能 (保持不变) ---
+// --- Salesman 功能 (提交时强制数字类型) ---
 if (isSalesman) {
   const form = document.getElementById("order-form");
   form.addEventListener("submit", e => {
@@ -179,7 +182,10 @@ if (isSalesman) {
       // 保持价格格式化
       price: `RM ${parseFloat(form.price.value).toFixed(2)}`, 
       delivery: form.delivery.value,
-      units: form.units.value,
+      
+      // ❗ 修复: 强制将 units 转换为整数进行存储
+      units: parseInt(form.units.value) || 1, 
+
       status: "Pending",
       deleted: false,
       timestamp: Date.now() // 记录时间戳
@@ -200,7 +206,6 @@ onValue(ref(db, "orders"), snapshot => {
   const currentTotalOrders = data ? Object.keys(data).length : 0;
 
   // --- 提示音逻辑 ---
-  // 仅在 Admin 页面 (isSalesman 为 false) 且非首次加载时，并且订单总数增加时触发
   if (!isSalesman && !isInitialLoad && currentTotalOrders > lastOrderCount) {
     // 播放提示音
     notificationSound.play().catch(error => {
@@ -226,7 +231,7 @@ onValue(ref(db, "orders"), snapshot => {
   };
 
   Object.entries(data).forEach(([key, order]) => {
-    // 忽略已删除订单，因为它不代表需要处理的新订单
+    // 忽略已删除订单
     if (order.deleted) {
       historyContainer.appendChild(createOrderCard(key, order, isSalesman));
       return;
@@ -238,7 +243,6 @@ onValue(ref(db, "orders"), snapshot => {
   // 按状态显示订单
   Object.keys(grouped).forEach(status => {
     grouped[status].forEach(({ key, order }) => {
-        // 使用 createOrderCard 显示当前订单
         ordersContainer.appendChild(createOrderCard(key, order, isSalesman));
     });
   });
