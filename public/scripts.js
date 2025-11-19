@@ -270,9 +270,12 @@ if (isSalesman) {
     });
 }
 
-// --- Admin & Salesman: 显示订单 (包含提示音逻辑和新的分组逻辑) ---
+// --- Admin & Salesman: 显示订单 ---
 onValue(ref(db, "orders"), snapshot => {
   const data = snapshot.val();
+  console.log("Firebase Data Received:", data); // <--- 新增这行，用于查看数据
+  
+  ordersContainer.innerHTML = "";
   
   // ⚠️ 修复点 2: 仅当元素存在时才清除内容
   if (ordersContainer) ordersContainer.innerHTML = "";
