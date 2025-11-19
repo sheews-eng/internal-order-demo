@@ -27,8 +27,11 @@ const statusColors = {
   "Pending Payment": "#f8d7da" // Reddish
 };
 
+// --- Salesman 状态: 用于存储多行商品数据 ---
+let orderItems = [];
+
 // --- 提示音和状态变量 (用于管理员页面) ---
-const notificationSound = new Audio('/ding.mp3'); 
+const notificationSound = new Audio('/ding.mp3');
 let lastOrderCount = 0;
 let isInitialLoad = true;
 
@@ -52,8 +55,49 @@ if (!isSalesman) {
     }, { once: true });
 }
 
+// --- Salesman Helper: 计算总价 ---
+function calculateGrandTotal() {
+    let total = orderItems.reduce((sum, item) => sum + item.units * parseFloat(item.pricePerUnit.replace('RM ', '')), 0);
+    document.getElementById('grand-total').textContent = `RM ${total.toFixed(2)}`;
+    return `RM ${total.toFixed(2)}`;
+}
 
-// --- Helper: 创建订单卡片函数 (重构/优化 UX) ---
+// --- Salesman Helper: 渲染商品列表 ---
+function renderItemsList() {
+    const container = document.getElementById('items-list-container');
+    container.innerHTML = '';
+
+    if (orderItems.length === 0) {
+        container.innerHTML = '<p style="color: #e74c3c; text-align: center;">No items added yet. Use the form below.</p>';
+        return;
+    }
+
+    orderItems.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'item-row';
+        div.innerHTML = `
+            <span class="item-desc">${item.itemDesc}</span>
+            <span class="item-units">${item.units} units @</span>
+            <span class="item-price">${item.pricePerUnit}</span>
+            <button type="button" class="remove-item-btn" data-index="${index}">Remove</button>
+        `;
+        container.appendChild(div);
+    });
+
+    document.querySelectorAll('.remove-item-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const index = parseInt(e.target.dataset.index);
+            orderItems.splice(index, 1);
+            renderItemsList();
+            calculateGrandTotal();
+        });
+    });
+
+    calculateGrandTotal();
+}
+
+
+// --- Helper: 创建订单卡片函数 (适配新的多商品结构) ---
 function createOrderCard(key, order, isSalesmanPage) {
     const div = document.createElement("div");
     div.className = order.deleted ? "card history" : "card";
@@ -61,38 +105,45 @@ function createOrderCard(key, order, isSalesmanPage) {
         div.style.backgroundColor = statusColors[order.status];
     }
 
-    // 定义订单字段及其显示标签
-    const fields = [
-        { label: "Customer", key: "customer" },
-        { label: "PO #", key: "poNumber" },
-        { label: "Item + Desc", key: "itemDesc" },
-        { label: "Price", key: "price" },
-        { label: "Delivery", key: "delivery" },
-        { label: "Units", key: "units" }
-    ];
-
-    // 1. 基础字段显示 (UX 改进: 添加字段标签)
-    fields.forEach(f => {
-        const span = document.createElement("span");
-        span.innerHTML = `<span style="font-weight: bold; color: #555;">${f.label}:</span> ${order[f.key]}`;
-        div.appendChild(span);
-    });
+    // 基础信息
+    let cardContent = `
+        <span><span style="font-weight: bold; color: #555;">Customer:</span> ${order.customer}</span>
+        <span><span style="font-weight: bold; color: #555;">PO #:</span> ${order.poNumber}</span>
+        <span><span style="font-weight: bold; color: #555;">Delivery:</span> ${order.delivery}</span>
+        <span><span style="font-weight: bold; color: #555;">Grand Total:</span> <b>${order.grandTotal}</b></span>
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 5px 0;">
+        <span><span style="font-weight: bold; color: #555;">Items:</span></span>
+    `;
     
-    // 如果是已删除订单，直接显示所有信息并返回
+    // 商品列表
+    if (order.orderItems && Array.isArray(order.orderItems)) {
+        order.orderItems.forEach(item => {
+            cardContent += `
+                <span style="margin-left: 10px; font-size: 0.9em;">
+                    - ${item.itemDesc} (${item.units} @ ${item.pricePerUnit})
+                </span>
+            `;
+        });
+    }
+
+
+    div.innerHTML = cardContent; // 使用 innerHTML 插入内容
+    
+    
+    // 检查是否为已删除订单
     if (order.deleted) {
-        // 在 history 视图中添加时间戳
         const timeSpan = document.createElement("span");
         timeSpan.style.fontSize = "0.85em";
         timeSpan.style.color = "#777";
         timeSpan.textContent = `Deleted: ${new Date(order.timestamp).toLocaleString()}`;
         div.appendChild(timeSpan);
 
-        // 新增：永久删除按钮 (对 Salesman 和 Admin 均可见)
+        // 永久删除按钮
         const permDeleteBtn = document.createElement("button");
         permDeleteBtn.textContent = "Permanently Delete";
-        permDeleteBtn.style.backgroundColor = "#c0392b"; // 深红色
+        permDeleteBtn.style.backgroundColor = "#c0392b";
         permDeleteBtn.style.marginTop = "10px";
-        permDeleteBtn.style.width = "100%"; // 按钮占满宽度
+        permDeleteBtn.style.width = "100%";
 
         permDeleteBtn.addEventListener("click", () => {
             if (confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
@@ -104,7 +155,7 @@ function createOrderCard(key, order, isSalesmanPage) {
     }
 
 
-    // 2. 状态和时间戳 (UX 改进: 突出显示状态和时间)
+    // 2. 状态和时间戳
     const statusSpan = document.createElement("span");
     statusSpan.innerHTML = `<span style="font-weight: bold; color: #555;">Status:</span> <b style="color: #2c3e50;">${order.status}</b>`;
     div.appendChild(statusSpan);
@@ -116,7 +167,7 @@ function createOrderCard(key, order, isSalesmanPage) {
     div.appendChild(timeSpan);
 
 
-    // 3. Admin 功能 (非销售员)
+    // 3. Admin 功能
     if (!isSalesmanPage) {
         const statusSelect = document.createElement("select");
         ["Pending", "Ordered", "Completed", "Pending Payment"].forEach(s => {
@@ -129,43 +180,22 @@ function createOrderCard(key, order, isSalesmanPage) {
         statusSelect.addEventListener("change", () => {
           set(ref(db, `orders/${key}/status`), statusSelect.value);
         });
-        statusSelect.style.marginTop = "8px"; // 增加间隔
+        statusSelect.style.marginTop = "8px";
         div.appendChild(statusSelect);
     }
 
-    // 4. Salesman 功能
+    // 4. Salesman 功能 (Edit 逻辑需要全面重写，此处为占位)
     if (isSalesmanPage) {
-        const form = document.getElementById("order-form");
+        // 由于新的多商品结构，编辑逻辑过于复杂，这里暂时只提供 Delete 按钮
         
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.style.backgroundColor = "#f39c12"; // 橙色
-
-        editBtn.addEventListener("click", () => {
-          // 填充表单
-          form.customer.value = order.customer;
-          form.poNumber.value = order.poNumber;
-          form.itemDesc.value = order.itemDesc;
-          form.price.value = order.price.replace("RM ", "");
-          form.delivery.value = order.delivery;
-          
-          // 修复：确保设置到 number 输入框的值是数字
-          form.units.value = parseInt(order.units) || 1; 
-          
-          // 删除旧订单，准备提交新订单
-          remove(ref(db, `orders/${key}`));
-        });
-
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
-        deleteBtn.style.backgroundColor = "#e74c3c"; // 红色
+        deleteBtn.style.backgroundColor = "#e74c3c";
         
         deleteBtn.addEventListener("click", () => {
-          // 标记订单为已删除
           set(ref(db, `orders/${key}/deleted`), true);
         });
 
-        div.appendChild(editBtn);
         div.appendChild(deleteBtn);
     }
     
@@ -173,27 +203,67 @@ function createOrderCard(key, order, isSalesmanPage) {
 }
 
 
-// --- Salesman 功能 (提交时强制数字类型) ---
+// --- Salesman 功能 (新增商品添加逻辑) ---
 if (isSalesman) {
-  const form = document.getElementById("order-form");
-  form.addEventListener("submit", e => {
-    e.preventDefault();
-    const data = {
-      customer: form.customer.value,
-      poNumber: form.poNumber.value,
-      itemDesc: form.itemDesc.value,
-      price: `RM ${parseFloat(form.price.value).toFixed(2)}`, 
-      delivery: form.delivery.value,
-      // 强制将 units 转换为整数进行存储
-      units: parseInt(form.units.value) || 1, 
-      status: "Pending",
-      deleted: false,
-      timestamp: Date.now() // 记录时间戳
-    };
-    const ordersRef = ref(db, "orders");
-    push(ordersRef, data);
-    form.reset();
-  });
+    const addItemBtn = document.getElementById('addItemBtn');
+    const form = document.getElementById("order-form");
+
+    // 绑定添加商品按钮
+    addItemBtn.addEventListener('click', () => {
+        const itemDesc = document.getElementById('addItemDesc').value;
+        const price = parseFloat(document.getElementById('addPrice').value);
+        const units = parseInt(document.getElementById('addUnits').value);
+
+        if (itemDesc && !isNaN(price) && !isNaN(units) && price > 0 && units > 0) {
+            orderItems.push({
+                itemDesc: itemDesc,
+                units: units,
+                pricePerUnit: `RM ${price.toFixed(2)}`,
+                totalPrice: `RM ${(price * units).toFixed(2)}`
+            });
+
+            // 重置添加商品表单
+            document.getElementById('addItemDesc').value = '';
+            document.getElementById('addPrice').value = '0.00';
+            document.getElementById('addUnits').value = '1';
+
+            renderItemsList();
+        } else {
+            alert("Please ensure all item details (description, price, units) are valid.");
+        }
+    });
+    
+    renderItemsList(); // 初始渲染空列表
+
+    // 绑定最终订单提交
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+
+        if (orderItems.length === 0) {
+            alert("Please add at least one item to the order before submitting.");
+            return;
+        }
+        
+        const grandTotal = calculateGrandTotal();
+
+        const data = {
+            customer: form.customer.value,
+            poNumber: form.poNumber.value,
+            delivery: form.delivery.value,
+            orderItems: orderItems, // 新的商品列表数组
+            grandTotal: grandTotal, // 新的总价
+            status: "Pending", 
+            deleted: false,
+            timestamp: Date.now()
+        };
+        const ordersRef = ref(db, "orders");
+        push(ordersRef, data);
+        
+        // 重置整个表单和商品列表
+        form.reset();
+        orderItems = [];
+        renderItemsList();
+    });
 }
 
 // --- Admin & Salesman: 显示订单 (包含提示音逻辑和新的分组逻辑) ---
@@ -202,7 +272,6 @@ onValue(ref(db, "orders"), snapshot => {
   ordersContainer.innerHTML = "";
   historyContainer.innerHTML = "";
 
-  // 计算当前订单总数 (用于提示音)
   const currentTotalOrders = data ? Object.keys(data).length : 0;
 
   // --- 提示音逻辑 ---
@@ -227,9 +296,9 @@ onValue(ref(db, "orders"), snapshot => {
       statusOrder = ["Pending", "Ordered", "Completed", "Pending Payment"];
       grouped = { "Pending": [], "Ordered": [], "Completed": [], "Pending Payment": [] };
   } else { 
-      // Admin 页面：按要求分组和排序，排除 Pending
-      statusOrder = ["Completed", "Pending Payment", "Ordered"];
-      grouped = { "Completed": [], "Pending Payment": [], "Ordered": [] };
+      // Admin 页面：Pending, Completed, Pending Payment, Ordered.
+      statusOrder = ["Pending", "Completed", "Pending Payment", "Ordered"];
+      grouped = { "Pending": [], "Completed": [], "Pending Payment": [], "Ordered": [] };
   }
 
   // 2. 遍历数据并填充分组
@@ -239,7 +308,7 @@ onValue(ref(db, "orders"), snapshot => {
       return;
     }
     
-    // 仅对当前页面需要的状态进行分组 (Admin 页面会跳过 Pending)
+    // 仅对当前页面需要的状态进行分组
     if (grouped[order.status]) {
       grouped[order.status].push({ key, order });
     }
@@ -252,15 +321,14 @@ onValue(ref(db, "orders"), snapshot => {
           const groupHeader = document.createElement("h3");
           groupHeader.textContent = status;
           groupHeader.style.textAlign = "center";
-          groupHeader.style.width = "100%"; // 确保标题独占一行
+          groupHeader.style.width = "100%";
           groupHeader.style.marginTop = "20px";
           groupHeader.style.padding = "5px";
           groupHeader.style.borderBottom = "2px solid #3498db";
           ordersContainer.appendChild(groupHeader);
           
-          // 创建一个包裹卡片的容器，确保卡片能像之前一样布局
+          // 创建一个包裹卡片的容器
           const groupCardContainer = document.createElement("div");
-          // 重用 .card-container 样式
           groupCardContainer.className = "card-container"; 
           
           grouped[status].forEach(({ key, order }) => {

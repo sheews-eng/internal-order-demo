@@ -1,23 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="/styles.css">
-</head>
+    <meta charset="UTF-8">
+    <title>Enterprise Admin Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+    </head>
 <body>
-  <h1>Admin Dashboard</h1>
+    <header class="header">
+        <h1>Admin Dashboard</h1>
+        <button id="logout-btn">Logout</button>
+    </header>
 
-  <p id="audio-prompt-text" style="text-align: center; color: #e74c3c; font-weight: bold; padding: 10px; border: 1px solid #e74c3c; cursor: pointer;">
-    ⚠️ Click anywhere to enable new order notifications
-  </p>
-  
-  <h2>Orders by Status</h2>
-  <div id="orders-container" class="card-container"></div>
+    <div class="dashboard-container">
+        <div id="summary-metrics" class="metrics-grid">
+            </div>
 
-  <h2>Deleted Orders (History)</h2>
-  <div id="history-container" class="card-container"></div>
+        <div class="order-management-panel">
+            <h2>Order Management</h2>
+            <div class="filter-controls">
+                <input type="text" id="order-search" placeholder="Search PO #, Customer...">
+                <select id="status-filter">
+                    <option value="All">All Statuses</option>
+                    <option value="Pending">Pending Approval</option>
+                    </select>
+                <button id="export-btn">Export to CSV</button>
+            </div>
+            
+            <table id="orders-table" class="display responsive nowrap" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>PO #</th>
+                        <th>Total Price</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
 
-  <script type="module" src="/scripts.js"></script>
+        <h2>Deleted/Archived Orders (Audit Log)</h2>
+        <div id="history-container" class="card-container"></div>
+    </div>
+
+    <script type="module" src="/scripts.js"></script>
 </body>
 </html>

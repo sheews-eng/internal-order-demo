@@ -2,23 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Salesman Page</title>
+  <title>Salesman Order Entry - Enterprise</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>Salesman Order Form</h1>
+  <h1>New Order Entry</h1>
 
-  <form id="order-form" class="order-form">
-    Customer: <input type="text" name="customer" required><br>
-    PO Number: <input type="text" name="poNumber" required><br>
-    Item + Description: <input type="text" name="itemDesc" required><br>
-    Price: RM <input type="number" name="price" step="0.01" value="0.00" required><br>
-    Delivery: <input type="text" name="delivery" required><br>
-    Units: <input type="number" name="units" value="1" required><br>
-    <button type="submit">Submit</button>
-  </form>
+  <div class="main-form-container">
+    <form id="order-form" class="order-form">
+      
+      <div class="form-section">
+        <h2>1. Order Details</h2>
+        
+        <label for="customer-select">Customer (CRM):</label>
+        <select id="customer-select" name="customer" required>
+            <option value="">-- Select Customer --</option>
+            <option value="Customer A">Customer A (CUST001)</option>
+            <option value="Customer B">Customer B (CUST002)</option>
+            <option value="Customer C">Customer C (CUST003)</option>
+        </select>
+        
+        <label for="poNumber">PO Number:</label>
+        <input type="text" name="poNumber" id="poNumber" required>
+        
+        <label for="delivery">Delivery Location:</label>
+        <input type="text" name="delivery" id="delivery" required>
+      </div>
 
-  <h2>Orders</h2>
+      <div class="form-section">
+        <h2>2. Order Items</h2>
+        <div id="items-list-container">
+          <p style="color: #e74c3c;">No items added yet. Use the form below.</p>
+        </div>
+        
+        <h3>Add New Item</h3>
+        <div class="add-item-form">
+            <label for="itemDesc">Item + Desc:</label>
+            <input type="text" id="addItemDesc" placeholder="Product name/SKU" required>
+            
+            <label for="price">Price (RM):</label>
+            <input type="number" id="addPrice" step="0.01" value="0.00" required>
+            
+            <label for="units">Units:</label>
+            <input type="number" id="addUnits" value="1" required>
+
+            <button type="button" id="addItemBtn" class="secondary-btn">Add to Order List</button>
+        </div>
+
+        <div class="total-summary">
+            <strong>Grand Total: <span id="grand-total">RM 0.00</span></strong>
+        </div>
+      </div>
+
+      <button type="submit" class="primary-submit-btn">Submit Enterprise Order</button>
+    </form>
+  </div>
+
+  <h2>Submitted Orders</h2>
   <div id="orders-container" class="card-container"></div>
 
   <h2>Deleted Orders (History)</h2>
