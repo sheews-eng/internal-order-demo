@@ -17,6 +17,7 @@ const db = getDatabase(app);
 
 // 页面类型判断
 const isSalesman = document.getElementById("order-form") !== null;
+// ⚠️ 修复点 1: 获取元素，它们可能是 null
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
 
@@ -65,6 +66,8 @@ function calculateGrandTotal() {
 // --- Salesman Helper: 渲染商品列表 ---
 function renderItemsList() {
     const container = document.getElementById('items-list-container');
+    if (!container) return; // 再次检查
+
     container.innerHTML = '';
 
     if (orderItems.length === 0) {
@@ -93,7 +96,10 @@ function renderItemsList() {
         });
     });
 
-    calculateGrandTotal();
+    // 确保在 Salesman 页面才运行此行
+    if (document.getElementById('grand-total')) {
+        calculateGrandTotal();
+    }
 }
 
 
@@ -127,7 +133,7 @@ function createOrderCard(key, order, isSalesmanPage) {
     }
 
 
-    div.innerHTML = cardContent; // 使用 innerHTML 插入内容
+    div.innerHTML = cardContent;
     
     
     // 检查是否为已删除订单
@@ -184,10 +190,8 @@ function createOrderCard(key, order, isSalesmanPage) {
         div.appendChild(statusSelect);
     }
 
-    // 4. Salesman 功能 (Edit 逻辑需要全面重写，此处为占位)
+    // 4. Salesman 功能 
     if (isSalesmanPage) {
-        // 由于新的多商品结构，编辑逻辑过于复杂，这里暂时只提供 Delete 按钮
-        
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
         deleteBtn.style.backgroundColor = "#e74c3c";
@@ -269,8 +273,10 @@ if (isSalesman) {
 // --- Admin & Salesman: 显示订单 (包含提示音逻辑和新的分组逻辑) ---
 onValue(ref(db, "orders"), snapshot => {
   const data = snapshot.val();
-  ordersContainer.innerHTML = "";
-  historyContainer.innerHTML = "";
+  
+  // ⚠️ 修复点 2: 仅当元素存在时才清除内容
+  if (ordersContainer) ordersContainer.innerHTML = "";
+  if (historyContainer) historyContainer.innerHTML = "";
 
   const currentTotalOrders = data ? Object.keys(data).length : 0;
 
@@ -292,7 +298,6 @@ onValue(ref(db, "orders"), snapshot => {
   let statusOrder = [];
 
   if (isSalesman) {
-      // Salesman 页面：保持原有顺序和所有状态
       statusOrder = ["Pending", "Ordered", "Completed", "Pending Payment"];
       grouped = { "Pending": [], "Ordered": [], "Completed": [], "Pending Payment": [] };
   } else { 
@@ -304,7 +309,8 @@ onValue(ref(db, "orders"), snapshot => {
   // 2. 遍历数据并填充分组
   Object.entries(data).forEach(([key, order]) => {
     if (order.deleted) {
-      historyContainer.appendChild(createOrderCard(key, order, isSalesman));
+      // ⚠️ 修复点 3: 仅当元素存在时才添加子元素
+      if (historyContainer) historyContainer.appendChild(createOrderCard(key, order, isSalesman));
       return;
     }
     
@@ -316,7 +322,8 @@ onValue(ref(db, "orders"), snapshot => {
 
   // 3. 按分组顺序显示订单 (使用 Header 分组)
   statusOrder.forEach(status => {
-      if (grouped[status].length > 0) {
+      // ⚠️ 修复点 4: 仅当分组中有数据且 ordersContainer 存在时才渲染
+      if (grouped[status].length > 0 && ordersContainer) {
           // 创建一个标题 (Header)
           const groupHeader = document.createElement("h3");
           groupHeader.textContent = status;
