@@ -11,21 +11,34 @@
     <h1>Salesman Order Form</h1>
 
     <form id="order-form" class="order-form">
+      <h3>Customer Info</h3>
       Customer: <input type="text" name="customer" required><br>
       PO Number: <input type="text" name="poNumber" required><br>
-      Item + Description: <input type="text" name="itemDesc" required><br>
-      Price: RM <input type="number" name="price" step="0.01" value="0.00" required><br>
-      Delivery: <input type="text" name="delivery" required><br>
-      Units: <input type="number" name="units" value="1" required><br>
-      <button type="submit">Submit</button>
+      Delivery Location: <input type="text" name="delivery" required><br>
+      
+      <hr>
+
+      <h3>Items</h3>
+      <div id="item-input">
+        Item + Description: <input type="text" id="itemDesc" placeholder="e.g. T-shirt, Blue, Size L" required><br>
+        Units: <input type="number" id="units" value="1" required><br>
+        Price (per unit): RM <input type="number" id="price" step="0.01" value="0.00" required><br>
+        <button type="button" id="addItemBtn" class="add-item-button">➕ Add Item to Order</button>
+      </div>
+      
+      <hr>
+
+      <h3>Order List</h3>
+      <div id="item-list-container">
+        </div>
+
+      <button type="submit" style="margin-top: 25px;">Submit Order</button>
     </form>
 
-    <h2>Orders</h2>
+    <h2>Pending Orders</h2>
     <div id="orders-container" class="card-container"></div>
-
-    <h2>Deleted Orders (History)</h2>
-    <div id="history-container" class="card-container"></div>
-  </div>
+    
+    </div>
   <script type="module" src="/scripts.js"></script>
 </body>
 </html>
