@@ -2,43 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Salesman Page</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="main-content">
-    <h1>Salesman Order Form</h1>
+  <h1>Salesman Order Form</h1>
 
-    <form id="order-form" class="order-form">
-      <h3>Customer Info</h3>
-      Customer: <input type="text" name="customer" required><br>
-      PO Number: <input type="text" name="poNumber" required><br>
-      Delivery Location: <input type="text" name="delivery" required><br>
-      
-      <hr>
+  <form id="order-form" class="order-form">
+    <label>Customer: <input type="text" name="customer" required></label><br>
+    <label>PO Number: <input type="text" name="poNumber" required></label><br>
+    <label>Item + Description: <input type="text" name="itemDesc" required></label><br>
+    <label>Price: RM <input type="number" name="price" step="0.01" value="0.00" required></label><br>
+    <label>Delivery: <input type="text" name="delivery" required></label><br>
+    <label>Units: <input type="number" name="units" value="1" required></label><br>
+    <button type="submit">Submit</button>
+  </form>
 
-      <h3>Items</h3>
-      <div id="item-input">
-        Item + Description: <input type="text" id="itemDesc" placeholder="e.g. T-shirt, Blue, Size L" required><br>
-        Units: <input type="number" id="units" value="1" required><br>
-        Price (per unit): RM <input type="number" id="price" step="0.01" value="0.00" required><br>
-        <button type="button" id="addItemBtn" class="add-item-button">➕ Add Item to Order</button>
-      </div>
-      
-      <hr>
+  <h2>Orders</h2>
+  <div id="orders-container" class="card-container"></div>
 
-      <h3>Order List</h3>
-      <div id="item-list-container">
-        </div>
+  <h2>Deleted Orders (History)</h2>
+  <div id="history-container" class="card-container"></div>
 
-      <button type="submit" style="margin-top: 25px;">Submit Order</button>
-    </form>
-
-    <h2>Pending Orders</h2>
-    <div id="orders-container" class="card-container"></div>
-    
-    </div>
   <script type="module" src="/scripts.js"></script>
 </body>
 </html>

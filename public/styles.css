@@ -192,3 +192,21 @@ button {
         margin: 0 0 30px 0;
     }
 }
+
+/* 🚀 优化点 6: CSS 状态类，取代 JS 行内样式 */
+.card.status-Pending {
+  background-color: #fff3cd; /* 对应原有的 Pending 颜色 */
+  border-left: 5px solid #ffc107;
+}
+.card.status-Ordered {
+  background-color: #d1ecf1; /* 对应原有的 Ordered 颜色 */
+  border-left: 5px solid #17a2b8;
+}
+.card.status-Completed {
+  background-color: #d4edda; /* 对应原有的 Completed 颜色 */
+  border-left: 5px solid #28a745;
+}
+.card.status-PendingPayment {
+  background-color: #f8d7da; /* 对应原有的 Pending Payment 颜色 */
+  border-left: 5px solid #dc3545;
+}

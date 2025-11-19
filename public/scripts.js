@@ -14,322 +14,130 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 🚀 修复点 1: 将 form 和 Salesman 状态提升到全局
-const form = document.getElementById("order-form"); 
-const isSalesman = form !== null;
+// 🚀 优化点: 状态颜色不再需要，因为我们使用 CSS 类
+// const statusColors = {
+//   "Pending": "#fff3cd",
+//   "Ordered": "#d1ecf1",
+//   "Completed": "#d4edda",
+//   "Pending Payment": "#f8d7da"
+// };
+
+// 页面类型判断
+const isSalesman = document.getElementById("order-form") !== null;
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
 
-const statusColors = {
-  "Pending": "#fff3cd",
-  "Ordered": "#d1ecf1",
-  "Completed": "#d4edda",
-  "Pending Payment": "#f8d7da"
-};
-
-// --- 全局状态变量 (用于 Salesman Edit 功能) ---
-const notificationSound = new Audio('/ding.mp3');
-let lastOrderCount = 0;
-let isInitialLoad = true;
-let currentItems = []; // Salesman: 用于存储临时添加的商品
-let renderItemList;   // Salesman: 用于存储渲染函数引用
-
-// --- Admin 功能: 音频解锁逻辑 (仅限 Admin 页面) ---
-if (!isSalesman) {
-    document.addEventListener('click', function unlockAudio() {
-        notificationSound.play().then(() => {
-            console.log("Audio playback unlocked.");
-            document.removeEventListener('click', unlockAudio);
-        }).catch(error => {
-            console.warn("Audio unlock failed, waiting for user interaction:", error);
-        });
-        notificationSound.pause();
-        notificationSound.currentTime = 0;
-    }, { once: true });
-}
-
-// --- Salesman 功能 (多商品逻辑) ---
+// --- Salesman 功能 ---
 if (isSalesman) {
-    const addItemBtn = document.getElementById("addItemBtn");
-    const itemListContainer = document.getElementById("item-list-container");
-
-    // 🚀 修复点 2: 将渲染函数赋值给全局变量
-    renderItemList = function() {
-        itemListContainer.innerHTML = "";
-        if (currentItems.length === 0) {
-            itemListContainer.innerHTML = "<p style='color:#999; text-align:center;'>No items added yet.</p>";
-            return;
-        }
-
-        currentItems.forEach((item, index) => {
-            const itemDiv = document.createElement("div");
-            itemDiv.className = "card item-preview";
-            itemDiv.style.borderLeft = "4px solid #3498db";
-            itemDiv.innerHTML = `
-                <span><b>Item:</b> ${item.itemDesc}</span>
-                <span><b>Units:</b> ${item.units}</span>
-                <span><b>Price/Unit:</b> ${item.price}</span>
-            `;
-            const removeBtn = document.createElement("button");
-            removeBtn.textContent = "Remove";
-            removeBtn.style.backgroundColor = "#e74c3c";
-            removeBtn.style.width = "auto";
-            removeBtn.addEventListener("click", () => {
-                currentItems.splice(index, 1);
-                renderItemList();
-            });
-            itemDiv.appendChild(removeBtn);
-            itemListContainer.appendChild(itemDiv);
-        });
-    }; // 注意这里使用分号结束函数表达式
-
-    addItemBtn.addEventListener("click", () => {
-        const itemDesc = document.getElementById("itemDesc").value;
-        const units = document.getElementById("units").value;
-        const price = document.getElementById("price").value;
-
-        if (!itemDesc || units <= 0 || price <= 0) {
-            alert("Please enter valid item details, units, and price.");
-            return;
-        }
-
-        currentItems.push({
-            itemDesc: itemDesc,
-            units: parseInt(units),
-            price: `RM ${parseFloat(price).toFixed(2)}`
-        });
-
-        // 重置商品输入字段
-        document.getElementById("itemDesc").value = "";
-        document.getElementById("units").value = "1";
-        document.getElementById("price").value = "0.00";
-        renderItemList();
-    });
-    
-    // 提交订单
-    form.addEventListener("submit", e => {
-        e.preventDefault();
-
-        if (currentItems.length === 0) {
-            alert("Please add at least one item to the order.");
-            return;
-        }
-
-        const data = {
-            customer: form.customer.value,
-            poNumber: form.poNumber.value,
-            delivery: form.delivery.value,
-            orderItems: currentItems, 
-            status: "Pending",
-            deleted: false,
-            timestamp: Date.now()
-        };
-
-        const ordersRef = ref(db, "orders");
-        push(ordersRef, data);
-        
-        // 重置表单和商品列表
-        form.customer.value = "";
-        form.poNumber.value = "";
-        form.delivery.value = "";
-        currentItems = []; 
-        renderItemList();
-    });
-
-    renderItemList(); // 初始渲染
+  const form = document.getElementById("order-form");
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const data = {
+      customer: form.customer.value,
+      poNumber: form.poNumber.value,
+      itemDesc: form.itemDesc.value,
+      // 确保价格格式正确
+      price: `RM ${parseFloat(form.price.value).toFixed(2)}`,
+      delivery: form.delivery.value,
+      units: form.units.value,
+      status: "Pending",
+      deleted: false,
+      timestamp: Date.now()
+    };
+    const ordersRef = ref(db, "orders");
+    push(ordersRef, data);
+    form.reset();
+  });
 }
 
-// --- Helper: 创建订单卡片 (适配新的多商品结构) ---
-function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
-    const div = document.createElement("div");
-    div.className = `card ${isHistory ? 'history' : ''}`;
-    div.style.borderLeft = isHistory ? '5px solid #909399' : `5px solid ${statusColors[order.status]}`;
-    
-    // 客户信息和PO号容器
-    const infoContainer = document.createElement('div');
-    infoContainer.style.display = 'flex';
-    infoContainer.style.flexDirection = 'column';
-    infoContainer.innerHTML = `
-        <span><b>Customer:</b> ${order.customer || 'N/A'}</span>
-        <span><b>PO:</b> ${order.poNumber || 'N/A'}</span>
-        <span><b>Delivery:</b> ${order.delivery || 'N/A'}</span>
-    `;
-    div.appendChild(infoContainer);
+// --- Admin & Salesman: 显示订单 ---
+onValue(ref(db, "orders"), snapshot => {
+  const data = snapshot.val();
+  ordersContainer.innerHTML = "";
+  historyContainer.innerHTML = "";
 
-    // 商品列表容器
-    const itemsListContainer = document.createElement('div');
-    itemsListContainer.style.display = 'flex';
-    itemsListContainer.style.flexDirection = 'column';
-    itemsListContainer.innerHTML = "<b>Items:</b>";
-    
-    if (order.orderItems && Array.isArray(order.orderItems)) {
-        order.orderItems.forEach(item => {
-            const itemSpan = document.createElement('span');
-            itemSpan.style.marginLeft = '10px';
-            itemSpan.innerHTML = `${item.itemDesc} (${item.units} x ${item.price})`;
-            itemsListContainer.appendChild(itemSpan);
-        });
-    } else {
-         itemsListContainer.innerHTML += "<span>N/A</span>";
+  if (!data) return;
+
+  const grouped = {
+    "Pending": [],
+    "Ordered": [],
+    "Completed": [],
+    "Pending Payment": []
+  };
+
+  Object.entries(data).forEach(([key, order]) => {
+    if (order.deleted) {
+      const div = document.createElement("div");
+      div.className = "card history";
+      div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} | ${order.status}`;
+      historyContainer.appendChild(div);
+      return;
     }
-    div.appendChild(itemsListContainer);
-    
-    // 时间戳
-    const timeSpan = document.createElement("span");
-    timeSpan.style.fontSize = "0.85em";
-    timeSpan.style.color = isHistory ? "#909399" : "#777";
-    timeSpan.textContent = `Submitted: ${new Date(order.timestamp).toLocaleString()}`;
-    div.appendChild(timeSpan);
-    
-    // 操作区域
-    const actionsContainer = document.createElement('div');
-    actionsContainer.style.gridColumn = 'span 1'; 
-    actionsContainer.style.display = 'flex';
-    actionsContainer.style.flexDirection = 'column';
-    actionsContainer.style.gap = '5px';
+    grouped[order.status].push({ key, order });
+  });
 
-    if (!isHistory) {
-        // Admin: 修改状态
-        if (!isSalesmanPage) {
-            const statusSelect = document.createElement("select");
-            ["Pending", "Ordered", "Completed", "Pending Payment"].forEach(s => {
-              const option = document.createElement("option");
-              option.value = s;
-              option.textContent = s;
-              if (s === order.status) option.selected = true;
-              statusSelect.appendChild(option);
-            });
-            statusSelect.addEventListener("change", () => {
-              set(ref(db, `orders/${key}/status`), statusSelect.value);
-            });
-            actionsContainer.appendChild(statusSelect);
-        }
+  Object.keys(grouped).forEach(status => {
+    grouped[status].forEach(({ key, order }) => {
+      const div = document.createElement("div");
+      // 🚀 优化点 4: 使用 CSS class 代替行内样式，并添加状态 class
+      div.className = `card status-${status.replace(/\s+/g, '')}`; 
+      
+      const fields = ["customer", "poNumber", "itemDesc", "price", "delivery", "units"];
+      fields.forEach(f => {
+        const span = document.createElement("span");
+        span.textContent = `${f}: ${order[f]}`; // 增加字段名方便查看
+        div.appendChild(span);
+      });
 
-        // Salesman: Edit (使用全局状态变量)
-        if (isSalesmanPage) {
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.addEventListener("click", () => {
-              // 恢复表单数据
-              form.customer.value = order.customer;
-              form.poNumber.value = order.poNumber;
-              form.delivery.value = order.delivery;
-              
-              // 恢复多商品数组并重新渲染列表
-              currentItems = order.orderItems || []; 
-              
-              if (confirm("Order details will be loaded into the form. Press OK to load and delete the old record. You must use the 'Add Item' button before submitting.")) {
-                  if (typeof renderItemList === 'function') {
-                      renderItemList(); // 🚀 使用全局函数
-                  }
-                  remove(ref(db, `orders/${key}`)); // 删除旧订单
-              }
-            });
-            actionsContainer.appendChild(editBtn);
-        }
+      // Admin 可以修改状态
+      if (!isSalesman) {
+        const statusSelect = document.createElement("select");
+        // 🚀 优化点 5: 为 select 添加 title 属性，提高可访问性
+        statusSelect.title = "Change Order Status"; 
         
-        // Salesman/Admin: Delete (移入历史)
+        ["Pending", "Ordered", "Completed", "Pending Payment"].forEach(s => {
+          const option = document.createElement("option");
+          option.value = s;
+          option.textContent = s;
+          if (s === order.status) option.selected = true;
+          statusSelect.appendChild(option);
+        });
+        statusSelect.addEventListener("change", () => {
+          set(ref(db, `orders/${key}/status`), statusSelect.value);
+        });
+        div.appendChild(statusSelect);
+      }
+
+      // Edit + Delete (Salesman)
+      if (isSalesman) {
+        // 确保 form 变量在作用域内 (在此版本中它已在 if (isSalesman) 块内)
+        const form = document.getElementById("order-form"); 
+        
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => {
+          form.customer.value = order.customer;
+          form.poNumber.value = order.poNumber;
+          form.itemDesc.value = order.itemDesc;
+          // 移除 RM 和空格以正确设置 input[type="number"] 的值
+          form.price.value = order.price.replace("RM ", "");
+          form.delivery.value = order.delivery;
+          // 由于 units 原始值为 'unit'，现在应该能正确处理数字
+          form.units.value = order.units; 
+          remove(ref(db, `orders/${key}`)); // 删除旧订单
+        });
+
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
-        deleteBtn.style.backgroundColor = "#e74c3c";
         deleteBtn.addEventListener("click", () => {
           set(ref(db, `orders/${key}/deleted`), true);
         });
-        actionsContainer.appendChild(deleteBtn);
-        
-    } else {
-        // Admin 历史记录：永久删除功能
-        if (!isSalesmanPage) {
-            const timeDeletedSpan = document.createElement("span");
-            timeDeletedSpan.style.fontSize = "0.85em";
-            timeDeletedSpan.style.color = "#909399";
-            timeDeletedSpan.textContent = `Deleted: ${new Date(order.timestamp).toLocaleString()}`;
-            actionsContainer.appendChild(timeDeletedSpan);
-            
-            const permDeleteBtn = document.createElement("button");
-            permDeleteBtn.textContent = "Permanent Delete";
-            permDeleteBtn.style.backgroundColor = "#8c1b1b"; 
-            permDeleteBtn.addEventListener("click", () => {
-              if (confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
-                  remove(ref(db, `orders/${key}`));
-              }
-            });
-            actionsContainer.appendChild(permDeleteBtn);
-        }
-    }
-    
-    div.appendChild(actionsContainer);
-    return div;
-}
 
-// --- Admin & Salesman: 显示订单 (Firebase 监听器) ---
-if (ordersContainer || historyContainer) {
-    onValue(ref(db, "orders"), snapshot => {
-      const data = snapshot.val();
-      
-      const currentTotalOrders = data ? Object.keys(data).length : 0;
-      
-      // --- 提示音逻辑 ---
-      if (!isSalesman && !isInitialLoad && currentTotalOrders > lastOrderCount) {
-        notificationSound.play().catch(error => {
-            console.warn("Could not play notification sound. User interaction may be required:", error);
-        });
+        div.appendChild(editBtn);
+        div.appendChild(deleteBtn);
       }
 
-      lastOrderCount = currentTotalOrders;
-      isInitialLoad = false;
-
-      // 仅当元素存在时才清除内容
-      if (ordersContainer) ordersContainer.innerHTML = "";
-      if (historyContainer) historyContainer.innerHTML = "";
-
-      if (!data) return;
-
-      const grouped = {
-        "Pending": [],
-        "Ordered": [],
-        "Completed": [],
-        "Pending Payment": []
-      };
-
-      Object.entries(data).forEach(([key, order]) => {
-        if (order.deleted) {
-          // 历史订单：Admin 显示，Salesman 不显示
-          if (!isSalesman && historyContainer) { 
-              const card = createOrderCard(key, order, isSalesman, true);
-              historyContainer.appendChild(card);
-          }
-          return;
-        }
-        
-        if (grouped[order.status]) { 
-            grouped[order.status].push({ key, order });
-        }
-      });
-
-      // 渲染分组的订单
-      // Salesman 只显示 Pending 订单
-      const statusOrder = isSalesman ? ["Pending"] : ["Pending", "Ordered", "Completed", "Pending Payment"];
-
-      statusOrder.forEach(status => {
-        if (grouped[status].length > 0 && ordersContainer) {
-            // 添加标题
-            const groupHeader = document.createElement("h3");
-            groupHeader.textContent = status;
-            groupHeader.style.textAlign = "center";
-            groupHeader.style.width = "100%";
-            groupHeader.style.marginTop = "20px";
-            groupHeader.style.padding = "5px";
-            groupHeader.style.borderBottom = "2px solid #3498db";
-            groupHeader.style.color = "#3498db";
-            ordersContainer.appendChild(groupHeader);
-            
-            // 渲染卡片
-            grouped[status].forEach(({ key, order }) => {
-              const card = createOrderCard(key, order, isSalesman, false);
-              ordersContainer.appendChild(card);
-            });
-        }
-      });
+      ordersContainer.appendChild(div);
     });
-}
+  });
+});
