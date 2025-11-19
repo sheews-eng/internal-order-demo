@@ -27,7 +27,7 @@ const statusColors = {
   "Pending Payment": "#f8d7da" // Reddish
 };
 
-// --- 新增: 提示音和状态变量 (用于管理员页面) ---
+// --- 提示音和状态变量 (用于管理员页面) ---
 // 1. 播放声音的 Audio 对象，确保 ding.mp3 位于项目根目录
 const notificationSound = new Audio('/ding.mp3'); 
 
@@ -35,6 +35,30 @@ const notificationSound = new Audio('/ding.mp3');
 let lastOrderCount = 0;
 // 3. 首次加载标志，用于避免页面首次加载时播放声音
 let isInitialLoad = true;
+
+// --- 新增: 音频解锁逻辑 (仅限 Admin 页面) ---
+if (!isSalesman) {
+    document.addEventListener('click', function unlockAudio() {
+        const promptElement = document.getElementById('audio-prompt-text');
+        
+        // 尝试播放一次，让浏览器允许后续自动播放
+        notificationSound.play().then(() => {
+            // 播放成功，说明音频已解锁
+            console.log("Audio playback unlocked.");
+            if (promptElement) {
+                promptElement.style.display = 'none'; // 隐藏提示
+            }
+            // 移除监听器
+            document.removeEventListener('click', unlockAudio);
+        }).catch(error => {
+            console.warn("Audio unlock failed, waiting for user interaction:", error);
+        });
+        
+        // 确保 audio.play() 始终从头开始，并立即停止，不发出声音
+        notificationSound.pause();
+        notificationSound.currentTime = 0;
+    }, { once: true }); // 只监听一次点击
+}
 
 
 // --- Helper: 创建订单卡片函数 (重构/优化 UX) ---
@@ -202,7 +226,7 @@ onValue(ref(db, "orders"), snapshot => {
   };
 
   Object.entries(data).forEach(([key, order]) => {
-    // 忽略已删除订单，避免影响订单计数和分组
+    // 忽略已删除订单，因为它不代表需要处理的新订单
     if (order.deleted) {
       historyContainer.appendChild(createOrderCard(key, order, isSalesman));
       return;
