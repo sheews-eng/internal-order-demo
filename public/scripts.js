@@ -14,18 +14,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 🚀 优化点: 状态颜色不再需要，因为我们使用 CSS 类
-// const statusColors = {
-//   "Pending": "#fff3cd",
-//   "Ordered": "#d1ecf1",
-//   "Completed": "#d4edda",
-//   "Pending Payment": "#f8d7da"
-// };
+// 移除 statusColors，改用 CSS 类
+// const statusColors = { ... }; 
 
 // 页面类型判断
 const isSalesman = document.getElementById("order-form") !== null;
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
+
 
 // --- Salesman 功能 ---
 if (isSalesman) {
@@ -36,7 +32,6 @@ if (isSalesman) {
       customer: form.customer.value,
       poNumber: form.poNumber.value,
       itemDesc: form.itemDesc.value,
-      // 确保价格格式正确
       price: `RM ${parseFloat(form.price.value).toFixed(2)}`,
       delivery: form.delivery.value,
       units: form.units.value,
@@ -69,7 +64,17 @@ onValue(ref(db, "orders"), snapshot => {
     if (order.deleted) {
       const div = document.createElement("div");
       div.className = "card history";
-      div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} | ${order.status}`;
+      // 优化：历史记录也使用清晰的字段标签
+      div.innerHTML = `
+        <span><b>Customer:</b> ${order.customer}</span>
+        <span><b>PO:</b> ${order.poNumber}</span>
+        <span><b>Item:</b> ${order.itemDesc}</span>
+        <span><b>Price:</b> ${order.price}</span>
+        <span><b>Units:</b> ${order.units}</span>
+        <span><b>Delivery:</b> ${order.delivery}</span>
+        <span><b>Status:</b> ${order.status}</span>
+        <span class="timestamp">Deleted: ${new Date(order.timestamp).toLocaleString()}</span>
+      `;
       historyContainer.appendChild(div);
       return;
     }
@@ -79,20 +84,39 @@ onValue(ref(db, "orders"), snapshot => {
   Object.keys(grouped).forEach(status => {
     grouped[status].forEach(({ key, order }) => {
       const div = document.createElement("div");
-      // 🚀 优化点 4: 使用 CSS class 代替行内样式，并添加状态 class
-      div.className = `card status-${status.replace(/\s+/g, '')}`; 
       
-      const fields = ["customer", "poNumber", "itemDesc", "price", "delivery", "units"];
+      // 🚀 样式优化: 移除行内样式，添加状态类
+      div.className = `card status-${status.replace(/\s+/g, '')}`; 
+
+      // 优化：使用对象来定义标签和值，使代码更清晰
+      const fields = [
+        { label: "Customer", value: order.customer },
+        { label: "PO", value: order.poNumber },
+        { label: "Item + Desc", value: order.itemDesc },
+        { label: "Price", value: order.price },
+        { label: "Units", value: order.units },
+        { label: "Delivery", value: order.delivery }
+      ];
+      
       fields.forEach(f => {
         const span = document.createElement("span");
-        span.textContent = `${f}: ${order[f]}`; // 增加字段名方便查看
+        // 消除不协调：显示明确的标签和值
+        span.innerHTML = `<b>${f.label}:</b> ${f.value}`;
         div.appendChild(span);
       });
+      
+      // 添加时间戳
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "timestamp";
+      timeSpan.textContent = `Submitted: ${new Date(order.timestamp).toLocaleString()}`;
+      div.appendChild(timeSpan);
+
 
       // Admin 可以修改状态
       if (!isSalesman) {
         const statusSelect = document.createElement("select");
-        // 🚀 优化点 5: 为 select 添加 title 属性，提高可访问性
+        statusSelect.id = `status-select-${key}`;
+        // 🚀 可访问性修复: 为 select 添加 title 属性
         statusSelect.title = "Change Order Status"; 
         
         ["Pending", "Ordered", "Completed", "Pending Payment"].forEach(s => {
@@ -110,7 +134,6 @@ onValue(ref(db, "orders"), snapshot => {
 
       // Edit + Delete (Salesman)
       if (isSalesman) {
-        // 确保 form 变量在作用域内 (在此版本中它已在 if (isSalesman) 块内)
         const form = document.getElementById("order-form"); 
         
         const editBtn = document.createElement("button");
@@ -119,11 +142,9 @@ onValue(ref(db, "orders"), snapshot => {
           form.customer.value = order.customer;
           form.poNumber.value = order.poNumber;
           form.itemDesc.value = order.itemDesc;
-          // 移除 RM 和空格以正确设置 input[type="number"] 的值
           form.price.value = order.price.replace("RM ", "");
           form.delivery.value = order.delivery;
-          // 由于 units 原始值为 'unit'，现在应该能正确处理数字
-          form.units.value = order.units; 
+          form.units.value = order.units;
           remove(ref(db, `orders/${key}`)); // 删除旧订单
         });
 
