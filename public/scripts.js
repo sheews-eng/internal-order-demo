@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 🚀 修复点 1: 将 form 声明移至全局，解决 ReferenceError
+// 🚀 修复点 1: 将 form 和 Salesman 状态提升到全局
 const form = document.getElementById("order-form"); 
 const isSalesman = form !== null;
 const ordersContainer = document.getElementById("orders-container");
@@ -27,11 +27,12 @@ const statusColors = {
   "Pending Payment": "#f8d7da"
 };
 
-// --- 提示音和状态变量 (用于管理员页面) ---
+// --- 全局状态变量 (用于 Salesman Edit 功能) ---
 const notificationSound = new Audio('/ding.mp3');
 let lastOrderCount = 0;
 let isInitialLoad = true;
 let currentItems = []; // Salesman: 用于存储临时添加的商品
+let renderItemList;   // Salesman: 用于存储渲染函数引用
 
 // --- Admin 功能: 音频解锁逻辑 (仅限 Admin 页面) ---
 if (!isSalesman) {
@@ -49,11 +50,11 @@ if (!isSalesman) {
 
 // --- Salesman 功能 (多商品逻辑) ---
 if (isSalesman) {
-    // form 变量现在是全局的
     const addItemBtn = document.getElementById("addItemBtn");
     const itemListContainer = document.getElementById("item-list-container");
 
-    function renderItemList() {
+    // 🚀 修复点 2: 将渲染函数赋值给全局变量
+    renderItemList = function() {
         itemListContainer.innerHTML = "";
         if (currentItems.length === 0) {
             itemListContainer.innerHTML = "<p style='color:#999; text-align:center;'>No items added yet.</p>";
@@ -80,7 +81,7 @@ if (isSalesman) {
             itemDiv.appendChild(removeBtn);
             itemListContainer.appendChild(itemDiv);
         });
-    }
+    }; // 注意这里使用分号结束函数表达式
 
     addItemBtn.addEventListener("click", () => {
         const itemDesc = document.getElementById("itemDesc").value;
@@ -204,7 +205,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             actionsContainer.appendChild(statusSelect);
         }
 
-        // Salesman: Edit (需要访问全局 form 变量)
+        // Salesman: Edit (使用全局状态变量)
         if (isSalesmanPage) {
             const editBtn = document.createElement("button");
             editBtn.textContent = "Edit";
@@ -214,19 +215,14 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
               form.poNumber.value = order.poNumber;
               form.delivery.value = order.delivery;
               
-              // 恢复多商品数组并重新渲染列表 (需要 Salesman 页面上的 renderItemList 函数)
-              currentItems = order.orderItems || [];
-              const renderListFn = document.getElementById("item-list-container") ? 
-                                   document.getElementById("item-list-container").closest('.main-content').querySelector('script').previousElementSibling.__functions.renderItemList : null;
+              // 恢复多商品数组并重新渲染列表
+              currentItems = order.orderItems || []; 
               
-              // 简单地重新加载页面以确保编辑状态：
-              // 这是一个临时的解决方案，因为 renderItemList 函数不在全局作用域
-              // 实际应用中，您应该将 renderItemList 放在全局作用域
-              // 这里我们直接执行删除和提示，并期望用户刷新页面后数据回到表单
-              
-              if (confirm("Order details will be loaded into the form. Press OK to load and delete the old record.")) {
+              if (confirm("Order details will be loaded into the form. Press OK to load and delete the old record. You must use the 'Add Item' button before submitting.")) {
+                  if (typeof renderItemList === 'function') {
+                      renderItemList(); // 🚀 使用全局函数
+                  }
                   remove(ref(db, `orders/${key}`)); // 删除旧订单
-                  alert("Please manually refresh the page to see the items loaded into the form.");
               }
             });
             actionsContainer.appendChild(editBtn);
@@ -312,6 +308,7 @@ if (ordersContainer || historyContainer) {
       });
 
       // 渲染分组的订单
+      // Salesman 只显示 Pending 订单
       const statusOrder = isSalesman ? ["Pending"] : ["Pending", "Ordered", "Completed", "Pending Payment"];
 
       statusOrder.forEach(status => {
