@@ -11,141 +11,36 @@ h1, h2 {
   margin-bottom: 15px;
 }
 
-/* --- 新增：订单分组标题样式 --- */
-#orders-container h3 {
-  text-align: center;
-  width: 100%;
-  color: #2c3e50;
-  border-bottom: 2px solid #3498db;
-  padding: 5px;
-  margin: 20px 0 10px 0;
-  font-size: 1.5em;
-}
-
-/* --- 新增：企业级 Salesman 表单布局 --- */
-.main-form-container {
-    max-width: 900px;
-    margin: 20px auto;
-    background: #fff;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.order-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 30px;
-    justify-content: space-between;
-}
-
-.form-section {
-    flex: 1; /* 两栏布局 */
-    min-width: 350px;
-    padding: 15px;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    background: #f9f9f9;
-}
-
-.form-section h2, .form-section h3 {
-    text-align: left;
-    color: #3498db;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 5px;
-    margin-top: 0;
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    font-weight: bold;
-    margin-top: 10px;
-    color: #555;
-}
-
-/* 通用输入框和按钮样式 */
-.order-form input, .order-form select {
-  width: 95%;
-  margin: 5px 0 10px 0;
-  padding: 10px 12px;
-  font-size: 14px;
+/* 🚀 修复点 1: 增大输入框和所有表单按钮的尺寸 */
+.order-form input, .order-form button, select {
+  margin: 5px 5px 10px 0;
+  padding: 10px 20px; /* 增大内边距 */
+  font-size: 16px;   /* 增大字体 */
   border-radius: 5px;
   border: 1px solid #ccc;
-  box-sizing: border-box;
 }
 
-/* 添加商品表单 */
-.add-item-form {
-    background: #eef;
-    padding: 15px;
-    border-radius: 5px;
-    border: 1px dashed #3498db;
-}
-
-/* 按钮样式 */
-button {
-  margin-top: 5px;
-  border-radius: 5px;
-  padding: 8px 15px;
-  cursor: pointer;
-  border: none;
+.order-form button {
+  background-color: #3498db;
   color: white;
+  border: none;
+  transition: 0.3s;
+  cursor: pointer;
 }
 
-button:hover {
-  opacity: 0.9;
+.order-form button:hover {
+  background-color: #2980b9;
 }
 
-.secondary-btn { /* Add Item button */
-    background-color: #2ecc71;
-    margin-top: 15px;
-}
-.primary-submit-btn {
-    background-color: #3498db;
-    width: 100%;
-    padding: 15px;
-    font-size: 1.1em;
-    font-weight: bold;
-    margin-top: 20px;
-}
-
-/* 产品列表样式 */
-.item-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    border-bottom: 1px dotted #ccc;
-    font-size: 0.95em;
-}
-.item-row:last-child {
-    border-bottom: none;
-}
-.item-desc {
-    flex: 3;
-    font-weight: 500;
-}
-.item-units, .item-price {
-    flex: 1;
-    text-align: right;
-}
-.remove-item-btn {
-    background-color: #e74c3c;
-    padding: 3px 6px;
-    font-size: 0.8em;
-}
-
-.total-summary {
-    text-align: right;
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 2px solid #333;
-    font-size: 1.2em;
+/* 🚀 修复点 2: 专门针对提交按钮，使其独占一行且宽度铺满 */
+.order-form button[type="submit"] {
+  display: block; 
+  width: 100%;    
+  margin-top: 20px; 
+  font-weight: bold;
 }
 
 
-/* --- 原有的卡片和容器样式 --- */
 .card-container {
   display: flex;
   flex-wrap: wrap;
@@ -174,7 +69,18 @@ span {
   margin: 2px 0;
 }
 
-/* 历史订单卡片样式 */
+/* 订单卡片中的按钮 (Edit/Delete) */
+button {
+  margin-top: 5px;
+  border-radius: 5px;
+  padding: 8px 10px; /* 略微增大订单卡片中按钮的尺寸 */
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
 .card.history {
   background-color: #f8f9fa;
   color: #666;
@@ -183,11 +89,4 @@ span {
 select {
   padding: 5px;
   border-radius: 5px;
-}
-
-/* 字段标签样式 */
-.card span > span:first-child {
-  font-weight: bold;
-  color: #555;
-  margin-right: 5px;
 }
