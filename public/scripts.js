@@ -34,7 +34,8 @@ let isInitialLoad = true;
 // --- Admin 功能: 音频解锁逻辑 (仅限 Admin 页面) ---
 if (!isSalesman) {
     document.addEventListener('click', function unlockAudio() {
-        const promptElement = document.getElementById('audio-prompt-text'); // 假设 Admin 页面有一个提示元素
+        // 假设 Admin 页面有一个提示元素，如果没有，可以忽略
+        const promptElement = document.getElementById('audio-prompt-text'); 
         
         notificationSound.play().then(() => {
             console.log("Audio playback unlocked.");
@@ -73,7 +74,7 @@ if (isSalesman) {
   });
 }
 
-// --- Admin & Salesman: 显示订单 (添加 Null 检查和提示音逻辑) ---
+// --- Admin & Salesman: 显示订单 ---
 // ⚠️ 全局安全检查：只有当页面上存在订单容器或历史容器时，才启动监听器
 if (ordersContainer || historyContainer) {
     onValue(ref(db, "orders"), snapshot => {
@@ -109,13 +110,21 @@ if (ordersContainer || historyContainer) {
         if (order.deleted) {
           const div = document.createElement("div");
           div.className = "card history";
-          div.textContent = `${order.customer} | ${order.poNumber} | ${order.itemDesc} | ${order.price} | ${order.delivery} | ${order.units} | ${order.status}`;
+          // 改进历史记录显示
+          div.innerHTML = `
+              <span><b>Customer:</b> ${order.customer}</span>
+              <span><b>PO Number:</b> ${order.poNumber}</span>
+              <span><b>Description:</b> ${order.itemDesc}</span>
+              <span><b>Status:</b> ${order.status}</span>
+              <span style="font-size: 0.8em; color: #999;">Deleted: ${new Date(order.timestamp).toLocaleString()}</span>
+          `;
+          
           // ⚠️ Null 检查
           if (historyContainer) historyContainer.appendChild(div);
           return;
         }
         
-        if (grouped[order.status]) { // 确保状态是有效的
+        if (grouped[order.status]) {
             grouped[order.status].push({ key, order });
         }
       });
@@ -126,12 +135,18 @@ if (ordersContainer || historyContainer) {
           div.className = "card";
           div.style.backgroundColor = statusColors[status];
 
-          const fields = ["customer", "poNumber", "itemDesc", "price", "delivery", "units"];
-          fields.forEach(f => {
+          const fields = {
+              "customer": "Customer", 
+              "poNumber": "PO Number", 
+              "itemDesc": "Description", 
+              "price": "Price", 
+              "delivery": "Delivery", 
+              "units": "Units"
+          };
+          
+          Object.entries(fields).forEach(([key, label]) => {
             const span = document.createElement("span");
-            // 添加字段标签以提高可读性
-            const label = f.charAt(0).toUpperCase() + f.slice(1) + ": ";
-            span.innerHTML = `<b>${label}</b>${order[f]}`;
+            span.innerHTML = `<b>${label}:</b> ${order[key]}`; // 改进可读性
             div.appendChild(span);
           });
           
@@ -164,7 +179,7 @@ if (ordersContainer || historyContainer) {
           if (isSalesman) {
             const editBtn = document.createElement("button");
             editBtn.textContent = "Edit";
-            editBtn.style.backgroundColor = "#f39c12"; // Yellow for edit
+            editBtn.style.backgroundColor = "#f39c12"; 
             editBtn.addEventListener("click", () => {
               form.customer.value = order.customer;
               form.poNumber.value = order.poNumber;
@@ -177,7 +192,7 @@ if (ordersContainer || historyContainer) {
 
             const deleteBtn = document.createElement("button");
             deleteBtn.textContent = "Delete";
-            deleteBtn.style.backgroundColor = "#e74c3c"; // Red for delete
+            deleteBtn.style.backgroundColor = "#e74c3c"; 
             deleteBtn.addEventListener("click", () => {
               set(ref(db, `orders/${key}/deleted`), true);
             });
@@ -185,8 +200,8 @@ if (ordersContainer || historyContainer) {
             div.appendChild(editBtn);
             div.appendChild(deleteBtn);
           }
-          
-          // ⚠️ Null 检查：仅当元素存在时才添加子元素
+
+          // ⚠️ Null 检查
           if (ordersContainer) ordersContainer.appendChild(div);
         });
       });
