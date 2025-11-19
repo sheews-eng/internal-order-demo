@@ -21,13 +21,23 @@ const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
 
 const statusColors = {
-  "Pending": "#fff3cd",
-  "Ordered": "#d1ecf1",
-  "Completed": "#d4edda",
-  "Pending Payment": "#f8d7da"
+  "Pending": "#fff3cd", // Yellowish
+  "Ordered": "#d1ecf1", // Cyan
+  "Completed": "#d4edda", // Greenish
+  "Pending Payment": "#f8d7da" // Reddish
 };
 
-// --- Helper: 创建订单卡片函数 (新增/重构) ---
+// --- 新增: 提示音和状态变量 (用于管理员页面) ---
+// 1. 播放声音的 Audio 对象，确保 ding.mp3 位于项目根目录
+const notificationSound = new Audio('/ding.mp3'); 
+
+// 2. 跟踪订单总数的变量，用于判断是否有新订单
+let lastOrderCount = 0;
+// 3. 首次加载标志，用于避免页面首次加载时播放声音
+let isInitialLoad = true;
+
+
+// --- Helper: 创建订单卡片函数 (重构/优化 UX) ---
 function createOrderCard(key, order, isSalesmanPage) {
     const div = document.createElement("div");
     div.className = order.deleted ? "card history" : "card";
@@ -100,7 +110,7 @@ function createOrderCard(key, order, isSalesmanPage) {
         
         const editBtn = document.createElement("button");
         editBtn.textContent = "Edit";
-        editBtn.style.backgroundColor = "#f39c12";
+        editBtn.style.backgroundColor = "#f39c12"; // 橙色
 
         editBtn.addEventListener("click", () => {
           // 填充表单
@@ -118,7 +128,7 @@ function createOrderCard(key, order, isSalesmanPage) {
 
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
-        deleteBtn.style.backgroundColor = "#e74c3c";
+        deleteBtn.style.backgroundColor = "#e74c3c"; // 红色
         
         deleteBtn.addEventListener("click", () => {
           // 标记订单为已删除
@@ -156,11 +166,30 @@ if (isSalesman) {
   });
 }
 
-// --- Admin & Salesman: 显示订单 (使用重构后的函数) ---
+// --- Admin & Salesman: 显示订单 (包含提示音逻辑) ---
 onValue(ref(db, "orders"), snapshot => {
   const data = snapshot.val();
   ordersContainer.innerHTML = "";
   historyContainer.innerHTML = "";
+
+  // 计算当前订单总数
+  const currentTotalOrders = data ? Object.keys(data).length : 0;
+
+  // --- 提示音逻辑 ---
+  // 仅在 Admin 页面 (isSalesman 为 false) 且非首次加载时，并且订单总数增加时触发
+  if (!isSalesman && !isInitialLoad && currentTotalOrders > lastOrderCount) {
+    // 播放提示音
+    notificationSound.play().catch(error => {
+        console.warn("Could not play notification sound. User interaction may be required:", error);
+    });
+  }
+
+  // 更新订单计数
+  lastOrderCount = currentTotalOrders;
+
+  // 标记首次加载完成
+  isInitialLoad = false;
+  // -------------------------
 
   if (!data) return;
 
@@ -173,8 +202,8 @@ onValue(ref(db, "orders"), snapshot => {
   };
 
   Object.entries(data).forEach(([key, order]) => {
+    // 忽略已删除订单，避免影响订单计数和分组
     if (order.deleted) {
-      // 使用 createOrderCard 显示历史订单
       historyContainer.appendChild(createOrderCard(key, order, isSalesman));
       return;
     }
@@ -182,6 +211,7 @@ onValue(ref(db, "orders"), snapshot => {
     grouped[order.status].push({ key, order });
   });
 
+  // 按状态显示订单
   Object.keys(grouped).forEach(status => {
     grouped[status].forEach(({ key, order }) => {
         // 使用 createOrderCard 显示当前订单
