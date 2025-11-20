@@ -11,13 +11,23 @@
   <h1>Salesman Order Form</h1>
 
   <form id="order-form" class="order-form">
-    <label>Customer: <input type="text" name="customer" required></label><br>
-    <label>PO Number: <input type="text" name="poNumber" required></label><br>
-    <label>Item + Description: <input type="text" name="itemDesc" required></label><br>
-    <label>Price: RM <input type="number" name="price" step="0.01" value="0.00" required></label><br>
-    <label>Delivery: <input type="text" name="delivery" required></label><br>
-    <label>Units: <input type="number" name="units" value="1" required></label><br> 
-    <button type="submit">Submit</button>
+    <label>Customer: <input type="text" name="customer" required></label>
+    <label>PO Number: <input type="text" name="poNumber" required></label>
+    <label>Delivery: <input type="text" name="delivery" required></label>
+    
+    <h3>Add Items</h3>
+    <div class="item-input-group">
+      <label>Item + Description: <input type="text" id="itemDesc" required></label>
+      <label>Units: <input type="number" id="units" value="1" required></label>
+      <label>Price: RM <input type="number" id="price" step="0.01" value="0.00" required></label>
+      <button type="button" id="addItemBtn">Add Item</button>
+    </div>
+    
+    <h3>Items in Order</h3>
+    <div id="item-list-container" class="card-container item-list-preview">
+      </div>
+
+    <button type="submit" class="submit-order-btn">Submit Order</button>
   </form>
 
   <h2>Orders</h2>

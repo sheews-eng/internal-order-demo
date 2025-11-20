@@ -5,54 +5,113 @@ body {
   color: #333;
 }
 
-h1, h2 {
+h1, h2, h3 {
   text-align: center;
   color: #2c3e50;
   margin-bottom: 15px;
 }
 
+/* --- Form Styles --- */
+
+.order-form {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 .order-form label {
-    display: block; /* 标签和输入框垂直对齐 */
-    margin-bottom: 8px;
-    font-weight: bold;
+    display: flex; /* 使用 flex 布局对齐 label 和 input */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 500;
 }
 .order-form input {
-    display: block; /* 使输入框独占一行 */
-    width: 90%; 
-}
-.order-form input, .order-form button, select {
-  margin: 5px 5px 10px 0;
-  padding: 7px 12px;
-  font-size: 14px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+    flex-grow: 1;
+    margin-left: 10px;
+    padding: 7px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
 }
 
 .order-form button {
-  background-color: #3498db;
-  color: white;
+  padding: 8px 15px;
+  font-size: 14px;
+  border-radius: 5px;
   border: none;
-  transition: 0.3s;
   cursor: pointer;
+  transition: 0.3s;
 }
 
-.order-form button:hover {
+.submit-order-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-top: 20px;
+    background-color: #3498db;
+    color: white;
+}
+
+.submit-order-btn:hover {
   background-color: #2980b9;
 }
+
+
+/* --- Multi-Item Input Group --- */
+
+.item-input-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 15px;
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    align-items: flex-end;
+}
+.item-input-group label {
+    flex: 1 1 30%;
+    margin: 0;
+    flex-direction: column; /* 让 label 和 input 垂直排列 */
+    align-items: flex-start;
+}
+.item-input-group label input {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 5px;
+}
+#addItemBtn {
+    flex: 0 0 auto;
+    background-color: #27ae60;
+    color: white;
+    height: 38px;
+    line-height: 22px;
+}
+#addItemBtn:hover {
+    background-color: #219d53;
+}
+
+/* --- Card Display Styles (Orders) --- */
 
 .card-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 15px;
   justify-content: center;
 }
 
 .card {
   background: #fff;
   border-radius: 10px;
-  padding: 12px;
+  padding: 15px;
   border: 1px solid #ccc;
-  min-width: 250px;
+  min-width: 300px;
+  width: calc(33% - 15px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -64,40 +123,76 @@ h1, h2 {
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-span {
-  margin: 2px 0;
+.card span {
+  margin: 1px 0;
+  display: block;
 }
 .card span b {
     min-width: 90px; /* 保持标签宽度一致 */
     display: inline-block;
 }
 
-
-button {
-  margin-top: 5px;
-  border-radius: 5px;
-  padding: 5px 10px;
-  cursor: pointer;
+/* Items List Specific Styles */
+.items-list {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid #eee;
 }
-.card button, .card select {
+.items-list .item-detail {
+    font-size: 0.9em;
+    color: #555;
     margin-left: 10px;
 }
 
-button:hover {
-  opacity: 0.9;
+/* Actions */
+.actions-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+.actions-container select {
+    flex-grow: 1;
+    margin-right: 10px;
+    padding: 5px;
+}
+.actions-container button {
+    margin: 0 2px;
+    padding: 5px 10px;
+}
+
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.card span.timestamp {
+    font-size: 0.75em;
+    color: #999;
+    align-self: flex-end;
+    margin-top: 5px;
 }
 
 .card.history {
   background-color: #f8f9fa;
   color: #666;
+  border-left: 5px solid #909399;
 }
 
-select {
-  padding: 5px;
-  border-radius: 5px;
+.status-group-header {
+    text-align: center;
+    width: 100%;
+    margin: 20px 0 10px;
+    padding: 5px;
+    border-bottom: 2px solid #3498db;
+    color: #3498db;
+    font-size: 1.5em;
 }
 
-/* 🚀 样式优化: CSS 状态类 (取代 JS 行内样式) */
+
+/* 🚀 状态样式 (取代 JS 行内样式) */
 .card.status-Pending {
   background-color: #fff3cd; /* 浅黄 */
   border-left: 5px solid #ffc107;
@@ -115,8 +210,33 @@ select {
   border-left: 5px solid #dc3545;
 }
 
-.card span.timestamp {
-    font-size: 0.8em;
-    color: #777;
-    margin-top: 5px;
+/* Item List Preview Styling (Salesman) */
+.item-list-preview {
+    gap: 8px;
+    justify-content: flex-start;
+}
+.item-preview {
+    background: #f0f2f5;
+    border: 1px solid #ddd;
+    box-shadow: none;
+    transition: none;
+    width: 100%;
+    max-width: 450px;
+}
+.item-preview:hover {
+    transform: none;
+    box-shadow: none;
+}
+.item-preview .remove-item-btn {
+    background-color: #e74c3c;
+    color: white;
+    padding: 3px 8px;
+}
+.item-preview span {
+    display: inline;
+}
+.no-items {
+    width: 100%;
+    text-align: center;
+    color: #aaa;
 }
