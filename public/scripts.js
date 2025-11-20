@@ -1,6 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
+// =========================================================
+// 确保此配置与您的 Firebase 项目完全一致
+// =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
   authDomain: "internal-orders-765dd.firebaseapp.com",
@@ -10,6 +13,7 @@ const firebaseConfig = {
   messagingSenderId: "778145240016",
   appId: "1:778145240016:web:b976e9bac38a86d3381fd5"
 };
+// =========================================================
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
@@ -32,6 +36,7 @@ let collapsedGroups = {};
 let lastOrderCount = 0;
 let audio;
 if (!isSalesman) {
+    // 确保 ding.mp3 文件位于网站根目录或当前脚本路径下
     audio = new Audio('/ding.mp3'); 
 }
 
@@ -434,4 +439,118 @@ function filterAndRenderOrders(allData, ordersContainer, isSalesman) {
     ordersContainer.innerHTML = "";
     
     // 1. 根据状态分组订单 (只处理未删除的订单)
-    const
+    const grouped = {
+        "Pending": [],
+        "Ordered": [],
+        "Follow Up": [], 
+        "Pending Payment": [],
+        "Completed": []
+    };
+
+    Object.entries(allData).forEach(([key, order]) => {
+        if (order.deleted) return;
+
+        // 搜索逻辑：检查 company, poNumber, attn
+        const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
+        if (searchTerm && !searchString.includes(searchTerm)) {
+            return; // 不符合搜索条件，跳过
+        }
+
+        const status = order.status || "Pending";
+        if (grouped[status]) { 
+            grouped[status].push({ key, order });
+        } else {
+             grouped["Pending"].push({ key, order });
+        }
+    });
+
+    // 2. 渲染每个组
+    let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"];
+
+    statusOrder.forEach(status => {
+        if (grouped[status].length > 0) {
+            
+            // 创建可折叠的头部
+            const groupWrapper = document.createElement("div");
+            groupWrapper.className = `status-group-wrapper status-${status.replace(/\s+/g, '')}`;
+            
+            const groupHeader = document.createElement("h3");
+            groupHeader.textContent = `${status} (${grouped[status].length})`;
+            groupHeader.className = 'status-group-header';
+            
+            const cardsContainer = document.createElement("div");
+            cardsContainer.className = 'cards-list-inner'; 
+            
+            // 检查并设置折叠状态
+            if (collapsedGroups[status]) {
+                groupHeader.classList.add('collapsed');
+                cardsContainer.style.display = 'none';
+            }
+
+            // 头部点击事件：切换折叠状态
+            groupHeader.addEventListener('click', () => {
+                const isCollapsed = groupHeader.classList.toggle('collapsed');
+                cardsContainer.style.display = isCollapsed ? 'none' : 'flex';
+                collapsedGroups[status] = isCollapsed; // 存储当前状态
+            });
+            
+            groupWrapper.appendChild(groupHeader);
+            
+            // 按时间戳降序排列 (最新订单在前)
+            grouped[status].sort((a, b) => b.order.timestamp - a.order.timestamp);
+
+            grouped[status].forEach(({ key, order }) => {
+              const card = createOrderCard(key, order, isSalesman, false);
+              cardsContainer.appendChild(card);
+            });
+            
+            groupWrapper.appendChild(cardsContainer);
+            ordersContainer.appendChild(groupWrapper);
+        }
+    });
+}
+
+// --- Firebase 监听器 ---
+if (ordersContainer || historyContainer) {
+    let allOrdersData = null; // 存储完整数据
+
+    onValue(ref(db, "orders"), snapshot => {
+      allOrdersData = snapshot.val();
+      
+      // 警报声逻辑 (使用完整数据)
+      if (!isSalesman && allOrdersData && audio) {
+          const currentOrderCount = Object.keys(allOrdersData).filter(key => !allOrdersData[key].deleted).length;
+          
+          if (lastOrderCount > 0 && currentOrderCount > lastOrderCount) {
+              audio.play().catch(e => console.log("Audio play failed (user needs to interact first):", e)); 
+          }
+          lastOrderCount = currentOrderCount;
+      }
+      
+      if (ordersContainer) {
+          // 渲染活动订单 (包含筛选和分组)
+          filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
+      }
+      
+      if (historyContainer) {
+          // 渲染历史订单 (不包含筛选)
+          historyContainer.innerHTML = "";
+          if (allOrdersData) {
+              Object.entries(allOrdersData).forEach(([key, order]) => {
+                  if (order.deleted) {
+                      const card = createOrderCard(key, order, isSalesman, true);
+                      historyContainer.appendChild(card);
+                  }
+              });
+          }
+      }
+    });
+
+    // 搜索输入事件监听器
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            // 每次输入都重新筛选和渲染，使用已存储的完整数据
+            filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
+        });
+    }
+}
