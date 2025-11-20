@@ -3,85 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salesman Order Submission</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Salesman - New Order</title>
+    <link rel="stylesheet" href="styles.css"> 
     
-    <style>
-        .order-form textarea#salesmanComment {
-            margin-bottom: 20px;
-        }
-    </style>
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js"></script>
 </head>
 <body>
 
-    <h1>📝 Salesman Order Form</h1>
+    <h1>Submit New Order</h1>
 
     <form id="order-form" class="order-form">
-        
-        <h2>Order Details</h2>
-        
         <label>Company Name: 
             <input type="text" name="company" id="company" required>
         </label>
-        
         <label>ATTN: 
             <input type="text" name="attn" id="attn" required>
         </label>
-        
         <label>H/P: 
             <input type="text" name="hp" id="hp" required>
         </label>
-        
-        <label>P/O Number: 
+        <label>PO Number: 
             <input type="text" name="poNumber" id="poNumber" required>
         </label>
-        
         <label>Delivery Location: 
             <input type="text" name="delivery" id="delivery" required>
         </label>
         
+        <label style="display: block; margin-bottom: 20px;">
+            <input type="checkbox" name="isUrgent" id="isUrgent" style="width: auto; margin-right: 10px;">
+            <strong style="color: #e74c3c;">Mark as URGENT ORDER 🚨</strong>
+        </label>
         <label>Salesman Comment:
             <textarea name="salesmanComment" id="salesmanComment" placeholder="Add your specific notes here (optional)..."></textarea>
         </label>
 
-        
-        <h2>Add Item</h2>
+        <h2>Items to Order</h2>
 
         <div class="item-input-group">
-            <label>Item Description:
-                <input type="text" id="itemDesc" placeholder="e.g. 50W LED Light">
-            </label>
-            <label>Units:
-                <input type="number" id="units" value="1" min="1">
-            </label>
-            <label>Price (RM):
-                <input type="number" id="price" value="0.00" step="0.01" min="0">
-            </label>
+            <label>Item Description: <input type="text" id="itemDesc"></label>
+            <label>Units: <input type="number" id="units" value="1" min="1"></label>
+            <label>Price (RM): <input type="number" id="price" value="0.00" step="0.01" min="0.00"></label>
             <button type="button" id="addItemBtn">Add Item</button>
         </div>
 
+        <h3>Current Items List</h3>
         <div id="item-list-container" class="item-list-preview">
             </div>
-        
+
         <button type="submit" class="submit-order-btn">Submit Order</button>
     </form>
 
     <hr>
-    
+
+    <h1>Active Orders</h1>
     <div id="filter-controls">
-        <label for="orderSearch">🔍 Filter/Search Orders:</label>
-        <input type="text" id="orderSearch" placeholder="Search by Company, PO #, or Contact...">
+        <label for="orderSearch">Search (Company, PO #, ATTN):</label>
+        <input type="text" id="orderSearch" placeholder="Start typing to filter orders...">
     </div>
 
-
-    <h1>📊 Active Orders</h1>
-    <div id="orders-container" class="card-container">
+    <div id="orders-container">
         </div>
     
     <hr>
-    
-    <h1>🗑️ Order History (Deleted)</h1>
-    <div id="history-container" class="card-container">
+
+    <h1>Order History (Deleted)</h1>
+    <div id="history-container">
         </div>
 
     <script type="module" src="scripts.js"></script>

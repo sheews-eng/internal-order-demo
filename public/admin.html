@@ -3,28 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Order Management</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Admin - Manage Orders</title>
+    
+    <link rel="icon" type="image/png" href="/favicon.png"> 
+    
+    <link rel="stylesheet" href="styles.css"> 
+    
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js"></script>
 </head>
 <body>
 
-    <h1>👑 Admin Order Management</h1>
+    <h1>Admin Panel - Active Orders</h1>
 
     <div id="filter-controls">
-        <label for="orderSearch">🔍 Filter/Search Orders:</label>
-        <input type="text" id="orderSearch" placeholder="Search by Company, PO #, or Contact...">
+        <label for="orderSearch">Search (Company, PO #, ATTN):</label>
+        <input type="text" id="orderSearch" placeholder="Start typing to filter orders...">
     </div>
 
-    <hr>
-
-    <h1>📊 Active Orders</h1>
-    <div id="orders-container" class="card-container">
+    <div id="orders-container">
         </div>
     
     <hr>
-    
-    <h1>🗑️ Order History (Deleted)</h1>
-    <div id="history-container" class="card-container">
+
+    <h1>Order History (Deleted)</h1>
+    <div id="history-container">
         </div>
 
     <script type="module" src="scripts.js"></script>

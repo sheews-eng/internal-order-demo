@@ -12,15 +12,17 @@ h1, h2, h3 {
   margin-bottom: 15px;
 }
 
-/* --- Form Styles (保持不变) --- */
-
+/* --- Form Styles --- */
 .order-form {
     max-width: 500px;
     margin: 20px auto;
     padding: 20px;
     background: #FFFFFF; 
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba
+
+[Image of X]
+(0,0,0,0.1);
 }
 
 .order-form label {
@@ -72,8 +74,7 @@ h1, h2, h3 {
   background-color: #e68210; 
 }
 
-/* --- Multi-Item Input Group (保持不变) --- */
-/* ... (保留所有关于 item-input-group, item-list-preview, edit-mode 的样式) ... */
+/* --- Multi-Item Input Group --- */
 
 .item-input-group {
     display: flex;
@@ -175,7 +176,7 @@ h1, h2, h3 {
     padding: 3px 8px;
 }
 
-/* --- Filter/Search Bar Styles (保持不变) --- */
+/* --- Filter/Search Bar Styles --- */
 #filter-controls {
     max-width: 800px;
     margin: 20px auto 30px;
@@ -183,7 +184,10 @@ h1, h2, h3 {
     padding: 15px;
     background: #FFFFFF;
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 3px rgba
+
+[Image of X]
+(0,0,0,0.08);
 }
 #filter-controls label {
     display: block;
@@ -206,11 +210,11 @@ h1, h2, h3 {
 }
 
 
-/* --- Table Display Styles (取代 Card View) --- */
+/* --- Table Display Styles --- */
 
 .order-group-container {
   width: 100%;
-  max-width: 1200px; /* 增加最大宽度以适应表格 */
+  max-width: 1200px; 
   margin: 0 auto;
 }
 
@@ -218,7 +222,10 @@ h1, h2, h3 {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba
+
+[Image of X]
+(0,0,0,0.1);
     background: #FFFFFF;
     font-size: 0.95em;
 }
@@ -233,7 +240,7 @@ h1, h2, h3 {
     background-color: #f0f2f5;
     font-weight: 600;
     color: #555;
-    position: sticky; /* 使表头粘性显示 */
+    position: sticky; 
     top: 0;
     z-index: 10;
 }
@@ -241,7 +248,7 @@ h1, h2, h3 {
 .orders-table tbody tr {
     cursor: pointer;
     transition: background-color 0.15s, border-left 0.15s;
-    border-left: 5px solid transparent; /* 默认透明边框 */
+    border-left: 5px solid transparent; 
 }
 
 /* 表格行悬停效果 */
@@ -254,8 +261,19 @@ h1, h2, h3 {
     border-left: 5px solid #FF9012; 
 }
 .orders-table tbody tr.has-comment:hover {
-    background-color: #FFFBE6; /* 稍亮背景 */
+    background-color: #FFFBE6; 
 }
+
+/* 🚨 紧急订单强调: 醒目的红色左边框和背景 */
+.orders-table tbody tr.status-urgent {
+    border-left: 5px solid #e74c3c; /* 红色边框 */
+    background-color: #FFF2F0 !important; /* 浅红背景 */
+    font-weight: 600; /* 加粗字体 */
+}
+.orders-table tbody tr.status-urgent:hover {
+    background-color: #FFE6E3 !important;
+}
+
 
 /* --- 行展开详情样式 --- */
 .details-row {
@@ -338,6 +356,7 @@ h1, h2, h3 {
 }
 
 /* --- Status Colors for Table Rows --- */
+/* (Base colors remain, but 'status-urgent' overrides them) */
 
 .status-Pending {
     background-color: #FFF8EE; 
