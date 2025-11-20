@@ -31,12 +31,13 @@ let currentEditKey = null;
 
 // 存储当前折叠状态: { "StatusName": true/false (true=collapsed) }
 let collapsedGroups = {}; 
+// 存储当前展开的详情行 Key
+let expandedKey = null;
 
 // 🔔 Admin 警报声逻辑
 let lastOrderCount = 0;
 let audio;
 if (!isSalesman) {
-    // 确保 ding.mp3 文件位于网站根目录或当前脚本路径下
     audio = new Audio('/ding.mp3'); 
 }
 
@@ -93,7 +94,6 @@ if (isSalesman) {
             const itemDiv = document.createElement("div");
             itemDiv.className = "card item-preview editable-item";
             
-            // 将价格字符串 "RM X.XX" 转换为数字 X.XX，便于输入框使用
             const priceValue = parseFloat(item.price.replace('RM ', ''));
 
             itemDiv.innerHTML = `
@@ -149,7 +149,6 @@ if (isSalesman) {
         const units = document.getElementById("units").value;
         const price = document.getElementById("price").value;
 
-        // 允许 itemDesc 为空，但 units 和 price 必须大于 0
         if (units <= 0 || price <= 0) {
             alert("Please enter valid item units and price (must be greater than 0).");
             return;
@@ -176,21 +175,17 @@ if (isSalesman) {
             return;
         }
         
-        // 只检查 units 和 price
         const invalidItem = currentItems.find(item => item.units <= 0 || parseFloat(item.price.replace('RM ', '')) <= 0);
         if (invalidItem) {
             alert("Please ensure all item units and prices are valid and non-zero.");
             return;
         }
         
-        // 获取 Salesman Comment
         const newSalesmanComment = form.salesmanComment.value.trim();
 
-        // 获取正在编辑的订单的现有数据（用于保留状态/时间戳/AdminComment）
-        const existingCard = document.querySelector(`.card[data-key="${currentEditKey}"]`);
+        const existingCard = document.querySelector(`tr[data-key="${currentEditKey}"]`);
         
         const data = {
-            // 核心更新: 字段名称
             company: form.company.value,
             attn: form.attn.value,
             hp: form.hp.value,
@@ -206,7 +201,6 @@ if (isSalesman) {
         };
         
         if (currentEditKey) {
-            // 更新现有订单
             set(ref(db, `orders/${currentEditKey}`), data)
                 .then(() => {
                     alert(`Order ${currentEditKey} updated successfully.`);
@@ -214,7 +208,6 @@ if (isSalesman) {
                 })
                 .catch(error => console.error("Update failed:", error));
         } else {
-            // 提交新订单
             const ordersRef = ref(db, "orders");
             push(ordersRef, data);
             resetForm();
@@ -224,221 +217,232 @@ if (isSalesman) {
     renderItemList(); 
 }
 
-// --- Helper: 创建订单卡片 ---
-function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
-    const hasAdminCommentClass = order.adminComment && order.adminComment.trim() !== "" ? 'has-comment' : '';
-    const div = document.createElement("div");
-    div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')} ${hasAdminCommentClass}`;
+// --- Helper: 创建详情行 ---
+function createDetailsRow(key, order, isSalesmanPage, isHistory) {
+    const totalAmount = (order.orderItems || []).reduce((sum, item) => {
+        const price = parseFloat(item.price.replace('RM ', '')) || 0;
+        return sum + (price * (item.units || 0));
+    }, 0);
     
-    div.setAttribute('data-key', key);
-    div.setAttribute('data-status', order.status);
-    div.setAttribute('data-timestamp', order.timestamp);
-    div.setAttribute('data-deleted', order.deleted);
-    div.setAttribute('data-admincomment', order.adminComment || ''); 
-    div.setAttribute('data-salesmancomment', order.salesmanComment || ''); 
+    // 1. 商品列表 HTML
+    const itemsListHTML = (order.orderItems || []).map(item => {
+        const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
+        return `<span>${itemDescDisplay} (${item.units} x ${item.price})</span>`;
+    }).join('');
 
-    // 1. 基本信息
-    const infoContainer = document.createElement('div');
-    infoContainer.className = 'order-info';
-    infoContainer.innerHTML = `
-        <span><b>Company:</b> ${order.company || 'N/A'}</span>
-        <span><b>ATTN:</b> ${order.attn || 'N/A'}</span>
-        <span><b>H/P:</b> ${order.hp || 'N/A'}</span>
-        <span><b>PO Number:</b> ${order.poNumber || 'N/A'}</span>
-        <span><b>Delivery:</b> ${order.delivery || 'N/A'}</span>
-    `;
-    div.appendChild(infoContainer);
-
-    // 2. 商品列表
-    const itemsListContainer = document.createElement('div');
-    itemsListContainer.className = 'items-list'; 
-    itemsListContainer.innerHTML = "<b>Items:</b>";
-    
-    if (order.orderItems && Array.isArray(order.orderItems)) {
-        order.orderItems.forEach(item => {
-            const itemSpan = document.createElement('span');
-            itemSpan.className = 'item-detail';
-            const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
-            itemSpan.innerHTML = `${itemDescDisplay} (${item.units} x ${item.price})`;
-            itemsListContainer.appendChild(itemSpan);
-        });
-    } else {
-         itemsListContainer.innerHTML += "<span class='item-detail'>N/A</span>";
-    }
-    div.appendChild(itemsListContainer);
-    
-    // 3. 时间戳
-    const timeSpan = document.createElement("span");
-    timeSpan.className = "timestamp"; 
-    timeSpan.textContent = `Submitted: ${new Date(order.timestamp).toLocaleString()}`;
-    div.appendChild(timeSpan);
-    
-    // 4. 评论显示区域 (双字段显示)
-    const commentsDisplayContainer = document.createElement('div');
-    commentsDisplayContainer.className = 'comments-display-container';
-    
-    // Salesman Comment (普通显示)
-    const scText = document.createElement('span');
-    scText.className = 'salesman-comment-text';
-    scText.innerHTML = `<b>Salesman Comment:</b> <span>${order.salesmanComment || 'N/A'}</span>`; 
-    commentsDisplayContainer.appendChild(scText);
-
-    // Admin Comment (高亮)
-    const acText = document.createElement('span');
-    acText.className = 'admin-comment-text';
-    const adminComment = order.adminComment && order.adminComment.trim() !== "";
-    const acContentHTML = adminComment
-        ? `<span class="comment-content-highlight">${order.adminComment}</span>` 
+    // 2. Admin Comment 输入框或显示
+    let adminCommentSection = '';
+    const adminCommentContent = order.adminComment && order.adminComment.trim() !== "" 
+        ? `<span class="comment-highlight">${order.adminComment}</span>` 
         : 'N/A';
-    acText.innerHTML = `<b>Admin Remark:</b> ${acContentHTML}`; 
-    commentsDisplayContainer.appendChild(acText);
 
-    div.appendChild(commentsDisplayContainer);
-    
-    // 5. Admin Comment 输入区域
-    const commentInputContainer = document.createElement('div');
-    commentInputContainer.className = 'comment-input-container';
-
-    // 只有 Admin Page 且非历史订单才显示 Admin 备注输入框
-    if (!isSalesmanPage && !isHistory) { 
-        const commentInput = document.createElement('textarea');
-        commentInput.placeholder = "Add or edit Admin Remark...";
-        commentInput.value = order.adminComment || '';
-        commentInput.className = 'comment-input';
-        
-        const saveCommentBtn = document.createElement('button');
-        saveCommentBtn.textContent = "Save Admin Remark";
-        saveCommentBtn.className = 'save-admin-comment-btn';
-        saveCommentBtn.addEventListener('click', () => {
-            // 保存到 adminComment 字段
-            set(ref(db, `orders/${key}/adminComment`), commentInput.value.trim());
-        });
-
-        commentInputContainer.appendChild(commentInput);
-        commentInputContainer.appendChild(saveCommentBtn);
+    if (!isSalesmanPage && !isHistory) {
+        // Admin Page: 可编辑输入框
+        adminCommentSection = `
+            <h4>Admin Remark</h4>
+            <textarea id="adminCommentInput_${key}" class="admin-comment-detail-input">${order.adminComment || ''}</textarea>
+            <button class="save-admin-comment-btn-detail" data-key="${key}">Save Remark</button>
+        `;
+    } else {
+        // Salesman Page / History: 只显示
+        adminCommentSection = `
+            <h4>Admin Remark:</h4>
+            <div class="comment-text">${adminCommentContent}</div>
+        `;
     }
 
-    if (commentInputContainer.children.length > 0) {
-         div.appendChild(commentInputContainer);
-    }
-    
-    // 6. 操作区域
-    const actionsContainer = document.createElement('div');
-    actionsContainer.className = 'actions-container'; 
-    
+    // 3. 动作按钮区
+    let actionsHTML = '';
     const isCompleted = order.status === "Completed";
     
     if (!isHistory) {
-        // Admin: 修改状态 
+        // Active Orders Actions
         if (!isSalesmanPage) {
-            const statusSelect = document.createElement("select");
-            statusSelect.title = "Change Order Status"; 
-            
-            // 订单所有可能的状态 (Completed现在可以改回)
+            // Admin: Status Change & Soft Delete
             const statusOptions = ["Pending", "Ordered", "Completed", "Pending Payment", "Follow Up"]; 
+            const statusSelectHTML = `<select id="statusSelect_${key}" title="Change Status">
+                ${statusOptions.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>`;
             
-            statusOptions.forEach(s => {
-              const option = document.createElement("option");
-              option.value = s;
-              option.textContent = s;
-              if (s === order.status) option.selected = true;
-              statusSelect.appendChild(option);
-            });
-            
-            statusSelect.addEventListener("change", () => {
-                set(ref(db, `orders/${key}/status`), statusSelect.value);
-            });
-            actionsContainer.appendChild(statusSelect);
+            actionsHTML = `
+                ${statusSelectHTML}
+                <button class="action-btn delete-btn" data-key="${key}" ${isCompleted ? 'disabled title="Completed orders must be permanently deleted by Admin from history."' : ''}>Delete</button>
+            `;
+        } else {
+            // Salesman: Edit & Soft Delete
+            actionsHTML = `
+                <button class="action-btn edit-btn" data-key="${key}" ${isCompleted ? 'disabled title="Completed orders cannot be edited."' : ''}>Edit</button>
+                <button class="action-btn delete-btn" data-key="${key}" ${isCompleted ? 'disabled title="Completed orders must be permanently deleted by Admin from history."' : ''}>Delete</button>
+            `;
         }
-
-        // Salesman: Edit (Completed 限制不变)
-        if (isSalesmanPage) {
+    } else {
+        // History Actions (Admin Only Perm Delete)
+        if (!isSalesmanPage) {
+            const timeDifference = Date.now() - order.timestamp;
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+            const isTooSoon = isCompleted && (timeDifference < twentyFourHours);
+            const timeRemaining = isTooSoon ? twentyFourHours - timeDifference : 0;
+            const hours = Math.floor(timeRemaining / 3600000);
+            const minutes = Math.floor((timeRemaining % 3600000) / 60000);
+            const title = isTooSoon 
+                ? `Must wait ${hours}h ${minutes}m (24 hours after completion) to permanently delete.` 
+                : "Permanently delete this order.";
             
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.disabled = isCompleted; 
-            editBtn.title = isCompleted ? "Completed orders cannot be edited." : "Edit Order";
-            editBtn.addEventListener("click", () => {
-              if (isCompleted) return; 
-              
-              currentEditKey = key; 
-              // 载入字段
-              form.company.value = order.company;
-              form.attn.value = order.attn;
-              form.hp.value = order.hp;
-              form.poNumber.value = order.poNumber;
-              form.delivery.value = order.delivery;
-              form.salesmanComment.value = order.salesmanComment || '';
-              
-              // Deep copy the array to avoid reference issues
-              currentItems = JSON.parse(JSON.stringify(order.orderItems || [])); 
-              renderItemList(); 
-              updateFormUI(true); 
-              
-              form.scrollIntoView({ behavior: 'smooth' });
+            actionsHTML = `
+                <button class="action-btn perm-delete-btn" data-key="${key}" ${isTooSoon ? 'disabled' : ''} title="${title}">Permanent Delete</button>
+            `;
+        }
+    }
+
+    const detailRow = document.createElement('tr');
+    detailRow.className = 'details-row';
+    detailRow.setAttribute('data-key', `details-${key}`);
+    detailRow.style.display = 'none';
+    
+    detailRow.innerHTML = `
+        <td colspan="6">
+            <div class="details-content">
+                <div class="details-info">
+                    <h4>Items & Total (${order.orderItems.length} items): RM ${totalAmount.toFixed(2)}</h4>
+                    <div class="items-list-detail">${itemsListHTML}</div>
+                    
+                    <h4 style="margin-top: 15px;">Salesman Comment:</h4>
+                    <div class="comment-text">${order.salesmanComment || 'N/A'}</div>
+                </div>
+                
+                <div class="details-actions">
+                    ${adminCommentSection}
+                    <div style="margin-top: 10px;">${actionsHTML}</div>
+                </div>
+            </div>
+        </td>
+    `;
+    
+    // Add event listeners for dynamic elements in the detail row
+    if (!isSalesmanPage && !isHistory) {
+        // Admin Status Change Listener (in detail view)
+        const statusSelect = detailRow.querySelector(`#statusSelect_${key}`);
+        if (statusSelect) {
+            statusSelect.addEventListener("change", (e) => {
+                set(ref(db, `orders/${key}/status`), e.target.value);
             });
-            actionsContainer.appendChild(editBtn);
         }
         
-        // Soft Delete (Completed 限制不变)
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.className = "delete-btn";
-        
-        deleteBtn.disabled = isCompleted; 
-        deleteBtn.title = isCompleted ? "Completed orders must be permanently deleted by Admin from history." : "Soft Delete";
-
+        // Admin Save Remark Listener
+        const saveBtn = detailRow.querySelector(`.save-admin-comment-btn-detail`);
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                const commentInput = detailRow.querySelector(`#adminCommentInput_${key}`);
+                set(ref(db, `orders/${key}/adminComment`), commentInput.value.trim());
+            });
+        }
+    }
+    
+    // Soft Delete Listener (Salesman & Admin)
+    const deleteBtn = detailRow.querySelector('.delete-btn');
+    if (deleteBtn && !isHistory) {
         deleteBtn.addEventListener("click", () => {
             if (deleteBtn.disabled) return;
             set(ref(db, `orders/${key}/deleted`), true);
         });
-        actionsContainer.appendChild(deleteBtn);
-        
-    } else {
-        // History Display
-        // Permanent Delete button for History (Admin 24小时限制不变)
-        if (!isSalesmanPage) {
-            const permDeleteBtn = document.createElement("button");
-            permDeleteBtn.textContent = "Permanent Delete";
-            permDeleteBtn.className = "perm-delete-btn"; 
-            
-            const timeDifference = Date.now() - order.timestamp;
-            const twentyFourHours = 24 * 60 * 60 * 1000;
-            const isTooSoon = isCompleted && (timeDifference < twentyFourHours);
-            
-            // 24小时永久删除限制
-            permDeleteBtn.disabled = isTooSoon;
-            if (isTooSoon) {
-                const timeRemaining = twentyFourHours - timeDifference;
-                const hours = Math.floor(timeRemaining / 3600000);
-                const minutes = Math.floor((timeRemaining % 3600000) / 60000);
-                permDeleteBtn.title = `Must wait ${hours}h ${minutes}m (24 hours after completion) to permanently delete.`;
-            } else {
-                permDeleteBtn.title = "Permanently delete this order.";
-            }
+    }
 
-            permDeleteBtn.addEventListener("click", () => {
-                if (permDeleteBtn.disabled) return;
-                if (confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
-                    remove(ref(db, `orders/${key}`));
-                }
-            });
-            actionsContainer.appendChild(permDeleteBtn);
-        }
+    // Salesman Edit Listener
+    const editBtn = detailRow.querySelector('.edit-btn');
+    if (editBtn && isSalesmanPage && !isHistory) {
+        editBtn.addEventListener("click", () => {
+            if (editBtn.disabled) return; 
+            
+            // 隐藏详情行
+            document.querySelector(`tr[data-key="details-${key}"]`)?.style.setProperty('display', 'none');
+            expandedKey = null;
+
+            // 载入表单
+            currentEditKey = key; 
+            form.company.value = order.company;
+            form.attn.value = order.attn;
+            form.hp.value = order.hp;
+            form.poNumber.value = order.poNumber;
+            form.delivery.value = order.delivery;
+            form.salesmanComment.value = order.salesmanComment || '';
+            
+            currentItems = JSON.parse(JSON.stringify(order.orderItems || [])); 
+            renderItemList(); 
+            updateFormUI(true); 
+            
+            form.scrollIntoView({ behavior: 'smooth' });
+        });
     }
     
-    div.appendChild(actionsContainer);
-    return div;
+    // Permanent Delete Listener (Admin Only History)
+    const permDeleteBtn = detailRow.querySelector('.perm-delete-btn');
+    if (permDeleteBtn) {
+        permDeleteBtn.addEventListener("click", () => {
+            if (permDeleteBtn.disabled) return;
+            if (confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
+                remove(ref(db, `orders/${key}`));
+            }
+        });
+    }
+
+    return detailRow;
 }
 
-// 筛选和渲染函数
-function filterAndRenderOrders(allData, ordersContainer, isSalesman) {
-    if (!allData || !ordersContainer) return;
 
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    ordersContainer.innerHTML = "";
+// --- Helper: 创建表格主行 ---
+function createOrderRow(key, order, isSalesmanPage, isHistory) {
+    const tr = document.createElement('tr');
+    tr.className = `status-${order.status.replace(/\s+/g, '')} ${order.adminComment && order.adminComment.trim() !== "" ? 'has-comment' : ''}`;
     
-    // 1. 根据状态分组订单 (只处理未删除的订单)
+    tr.setAttribute('data-key', key);
+    tr.setAttribute('data-status', order.status);
+    tr.setAttribute('data-admincomment', order.adminComment || ''); 
+    
+    // 主行显示关键信息
+    tr.innerHTML = `
+        <td>${new Date(order.timestamp).toLocaleDateString()}</td>
+        <td>${order.company || 'N/A'}</td>
+        <td>${order.poNumber || 'N/A'}</td>
+        <td>${order.attn || 'N/A'}</td>
+        <td>${order.delivery || 'N/A'}</td>
+        <td>${order.status}</td>
+    `;
+    
+    // 鼠标点击行切换详情展开/收起
+    tr.addEventListener('click', () => {
+        const detailRow = document.querySelector(`tr[data-key="details-${key}"]`);
+        
+        if (expandedKey === key) {
+            // 收起当前行
+            detailRow.style.setProperty('display', 'none');
+            expandedKey = null;
+        } else {
+            // 展开新行
+            // 1. 先收起所有其他行
+            document.querySelectorAll('.details-row').forEach(row => {
+                row.style.setProperty('display', 'none');
+            });
+            
+            // 2. 展开新行
+            if (detailRow) {
+                detailRow.style.removeProperty('display');
+                expandedKey = key;
+            }
+        }
+    });
+    
+    return tr;
+}
+
+// 筛选和渲染函数 (表格模式)
+function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
+    if (!allData || !container) return;
+
+    // 历史订单不使用搜索功能
+    const searchTerm = isHistory ? '' : (searchInput ? searchInput.value.toLowerCase().trim() : '');
+    container.innerHTML = "";
+    
+    // 1. 根据状态分组订单
     const grouped = {
         "Pending": [],
         "Ordered": [],
@@ -446,16 +450,22 @@ function filterAndRenderOrders(allData, ordersContainer, isSalesman) {
         "Pending Payment": [],
         "Completed": []
     };
+    
+    const ordersToRender = [];
 
     Object.entries(allData).forEach(([key, order]) => {
-        if (order.deleted) return;
+        // 区分活动订单和历史订单
+        const isDeleted = order.deleted;
+        if (isHistory !== isDeleted) return;
 
-        // 搜索逻辑：检查 company, poNumber, attn
-        const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
-        if (searchTerm && !searchString.includes(searchTerm)) {
-            return; // 不符合搜索条件，跳过
+        // 搜索逻辑 (仅限活动订单)
+        if (!isHistory) {
+            const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
+            if (searchTerm && !searchString.includes(searchTerm)) {
+                return; 
+            }
         }
-
+        
         const status = order.status || "Pending";
         if (grouped[status]) { 
             grouped[status].push({ key, order });
@@ -464,60 +474,113 @@ function filterAndRenderOrders(allData, ordersContainer, isSalesman) {
         }
     });
 
-    // 2. 渲染每个组
+    // 2. 渲染每个组的表格
     let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"];
+    if (isHistory) {
+        // 历史订单统一显示，无需复杂状态分组，只按时间排序
+        statusOrder = ["History"];
+        grouped["History"] = Object.entries(allData)
+            .filter(([key, order]) => order.deleted)
+            .map(([key, order]) => ({ key, order }));
+    }
 
+    const tableHeaders = `
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Company</th>
+                <th>PO #</th>
+                <th>ATTN</th>
+                <th>Delivery Location</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+    `;
+
+    // 渲染历史订单
+    if (isHistory) {
+        if (grouped["History"].length === 0) {
+            container.innerHTML = "<p class='no-items'>No deleted orders found in history.</p>";
+            return;
+        }
+        
+        const historyTable = document.createElement('table');
+        historyTable.className = 'orders-table history-table';
+        historyTable.innerHTML = tableHeaders;
+        const tbody = document.createElement('tbody');
+        
+        grouped["History"].sort((a, b) => b.order.timestamp - a.order.timestamp);
+        
+        grouped["History"].forEach(({ key, order }) => {
+            tbody.appendChild(createOrderRow(key, order, isSalesman, true));
+            tbody.appendChild(createDetailsRow(key, order, isSalesman, true));
+        });
+        historyTable.appendChild(tbody);
+        container.appendChild(historyTable);
+        return;
+    }
+
+
+    // 渲染活动订单 (按状态分组)
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'order-group-container';
+    
     statusOrder.forEach(status => {
         if (grouped[status].length > 0) {
             
             // 创建可折叠的头部
-            const groupWrapper = document.createElement("div");
-            groupWrapper.className = `status-group-wrapper status-${status.replace(/\s+/g, '')}`;
-            
             const groupHeader = document.createElement("h3");
             groupHeader.textContent = `${status} (${grouped[status].length})`;
             groupHeader.className = 'status-group-header';
             
-            const cardsContainer = document.createElement("div");
-            cardsContainer.className = 'cards-list-inner'; 
+            const table = document.createElement("table");
+            table.className = 'orders-table';
+            table.innerHTML = tableHeaders;
             
+            const tbody = document.createElement('tbody');
+
             // 检查并设置折叠状态
             if (collapsedGroups[status]) {
                 groupHeader.classList.add('collapsed');
-                cardsContainer.style.display = 'none';
+                table.style.display = 'none';
             }
 
             // 头部点击事件：切换折叠状态
             groupHeader.addEventListener('click', () => {
                 const isCollapsed = groupHeader.classList.toggle('collapsed');
-                cardsContainer.style.display = isCollapsed ? 'none' : 'flex';
+                table.style.display = isCollapsed ? 'none' : 'table';
                 collapsedGroups[status] = isCollapsed; // 存储当前状态
             });
-            
-            groupWrapper.appendChild(groupHeader);
             
             // 按时间戳降序排列 (最新订单在前)
             grouped[status].sort((a, b) => b.order.timestamp - a.order.timestamp);
 
             grouped[status].forEach(({ key, order }) => {
-              const card = createOrderCard(key, order, isSalesman, false);
-              cardsContainer.appendChild(card);
+              tbody.appendChild(createOrderRow(key, order, isSalesman, false));
+              tbody.appendChild(createDetailsRow(key, order, isSalesman, false));
             });
             
-            groupWrapper.appendChild(cardsContainer);
-            ordersContainer.appendChild(groupWrapper);
+            table.appendChild(tbody);
+            tableWrapper.appendChild(groupHeader);
+            tableWrapper.appendChild(table);
         }
     });
+    
+    container.appendChild(tableWrapper);
+    
+    if (container.children.length === 0) {
+        container.innerHTML = "<p class='no-items'>No active orders match the search criteria.</p>";
+    }
 }
 
 // --- Firebase 监听器 ---
 if (ordersContainer || historyContainer) {
-    let allOrdersData = null; // 存储完整数据
+    let allOrdersData = null; 
 
     onValue(ref(db, "orders"), snapshot => {
       allOrdersData = snapshot.val();
       
-      // 警报声逻辑 (使用完整数据)
+      // 警报声逻辑
       if (!isSalesman && allOrdersData && audio) {
           const currentOrderCount = Object.keys(allOrdersData).filter(key => !allOrdersData[key].deleted).length;
           
@@ -527,22 +590,14 @@ if (ordersContainer || historyContainer) {
           lastOrderCount = currentOrderCount;
       }
       
+      // 1. 渲染活动订单 (表格模式)
       if (ordersContainer) {
-          // 渲染活动订单 (包含筛选和分组)
-          filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
+          filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
       }
       
+      // 2. 渲染历史订单 (表格模式)
       if (historyContainer) {
-          // 渲染历史订单 (不包含筛选)
-          historyContainer.innerHTML = "";
-          if (allOrdersData) {
-              Object.entries(allOrdersData).forEach(([key, order]) => {
-                  if (order.deleted) {
-                      const card = createOrderCard(key, order, isSalesman, true);
-                      historyContainer.appendChild(card);
-                  }
-              });
-          }
+          filterAndRenderOrders(allOrdersData, historyContainer, isSalesman, true);
       }
     });
 
@@ -550,7 +605,7 @@ if (ordersContainer || historyContainer) {
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             // 每次输入都重新筛选和渲染，使用已存储的完整数据
-            filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
+            filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
         });
     }
 }
