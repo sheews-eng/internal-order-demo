@@ -18,11 +18,15 @@ const form = document.getElementById("order-form");
 const isSalesman = form !== null;
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
+const searchInput = document.getElementById("orderSearch"); // 🚀 NEW: 搜索输入框
 
 // Salesman 多商品状态
 let currentItems = []; 
 let renderItemList;   
 let currentEditKey = null; 
+
+// 存储当前折叠状态: { "StatusName": true/false (true=collapsed) }
+let collapsedGroups = {}; 
 
 // 🔔 Admin 警报声逻辑
 let lastOrderCount = 0;
@@ -60,7 +64,6 @@ if (isSalesman) {
     
     // 重置表单和 UI
     const resetForm = () => {
-        // 🚀 更新字段名称
         form.company.value = "";
         form.attn.value = "";
         form.hp.value = "";
@@ -102,6 +105,7 @@ if (isSalesman) {
             removeBtn.textContent = "Remove";
             removeBtn.className = "remove-item-btn";
             removeBtn.addEventListener("click", () => {
+                currentItems.splice(index, 0); // 使用splice(index, 1)删除
                 currentItems.splice(index, 1);
                 renderItemList();
             });
@@ -182,7 +186,7 @@ if (isSalesman) {
         const existingCard = document.querySelector(`.card[data-key="${currentEditKey}"]`);
         
         const data = {
-            // 🚀 核心更新: 字段名称
+            // 核心更新: 字段名称
             company: form.company.value,
             attn: form.attn.value,
             hp: form.hp.value,
@@ -193,7 +197,7 @@ if (isSalesman) {
             deleted: currentEditKey ? (existingCard?.dataset?.deleted === 'true') : false, 
             timestamp: currentEditKey ? (parseInt(existingCard?.dataset?.timestamp) || Date.now()) : Date.now(), 
             
-            salesmanComment: currentEditKey ? newSalesmanComment : newSalesmanComment, 
+            salesmanComment: newSalesmanComment, 
             adminComment: currentEditKey ? (existingCard?.dataset?.admincomment || "") : "" 
         };
         
@@ -269,18 +273,16 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const commentsDisplayContainer = document.createElement('div');
     commentsDisplayContainer.className = 'comments-display-container';
     
-    const salesmanComment = order.salesmanComment && order.salesmanComment.trim() !== "";
-    const adminComment = order.adminComment && order.adminComment.trim() !== "";
-
-    // A. Salesman Comment (普通显示)
+    // Salesman Comment (普通显示)
     const scText = document.createElement('span');
     scText.className = 'salesman-comment-text';
     scText.innerHTML = `<b>Salesman Comment:</b> <span>${order.salesmanComment || 'N/A'}</span>`; 
     commentsDisplayContainer.appendChild(scText);
 
-    // B. Admin Comment (高亮)
+    // Admin Comment (高亮)
     const acText = document.createElement('span');
     acText.className = 'admin-comment-text';
+    const adminComment = order.adminComment && order.adminComment.trim() !== "";
     const acContentHTML = adminComment
         ? `<span class="comment-content-highlight">${order.adminComment}</span>` 
         : 'N/A';
@@ -323,22 +325,14 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const isCompleted = order.status === "Completed";
     
     if (!isHistory) {
-        // Admin: 修改状态
+        // Admin: 修改状态 (Completed现在可以改回)
         if (!isSalesmanPage) {
             const statusSelect = document.createElement("select");
             statusSelect.title = "Change Order Status"; 
             
-            // 🚀 更新状态选项，新增 Follow Up
-            let statusOptions = ["Ordered", "Completed", "Pending Payment", "Follow Up"]; 
+            // 订单所有可能的状态
+            const statusOptions = ["Pending", "Ordered", "Completed", "Pending Payment", "Follow Up"]; 
             
-            if (isCompleted) {
-                statusOptions = statusOptions.filter(s => s === "Completed");
-            }
-            
-            if (!statusOptions.includes(order.status)) {
-                statusOptions.unshift(order.status);
-            }
-
             statusOptions.forEach(s => {
               const option = document.createElement("option");
               option.value = s;
@@ -353,7 +347,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             actionsContainer.appendChild(statusSelect);
         }
 
-        // Salesman: Edit (Completed 限制)
+        // Salesman: Edit (Completed 限制不变)
         if (isSalesmanPage) {
             
             const editBtn = document.createElement("button");
@@ -364,7 +358,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
               if (isCompleted) return; 
               
               currentEditKey = key; 
-              // 🚀 载入新的字段
+              // 载入字段
               form.company.value = order.company;
               form.attn.value = order.attn;
               form.hp.value = order.hp;
@@ -382,7 +376,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             actionsContainer.appendChild(editBtn);
         }
         
-        // Soft Delete (Completed 限制)
+        // Soft Delete (Completed 限制不变)
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
         deleteBtn.className = "delete-btn";
@@ -398,7 +392,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
         
     } else {
         // History Display
-        // Permanent Delete button for History (Admin 24小时限制)
+        // Permanent Delete button for History (Admin 24小时限制不变)
         if (!isSalesmanPage) {
             const permDeleteBtn = document.createElement("button");
             permDeleteBtn.textContent = "Permanent Delete";
@@ -433,14 +427,95 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     return div;
 }
 
-// --- Admin & Salesman: 显示订单 (Firebase 监听器) ---
+// 🚀 NEW: 筛选和渲染函数
+function filterAndRenderOrders(allData, ordersContainer, isSalesman) {
+    if (!allData || !ordersContainer) return;
+
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    ordersContainer.innerHTML = "";
+    
+    // 1. 根据状态分组订单 (只处理未删除的订单)
+    const grouped = {
+        "Pending": [],
+        "Ordered": [],
+        "Follow Up": [], 
+        "Pending Payment": [],
+        "Completed": []
+    };
+
+    Object.entries(allData).forEach(([key, order]) => {
+        if (order.deleted) return;
+
+        // 🚀 NEW: 搜索逻辑
+        const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
+        if (searchTerm && !searchString.includes(searchTerm)) {
+            return; // 不符合搜索条件，跳过
+        }
+
+        const status = order.status || "Pending";
+        if (grouped[status]) { 
+            grouped[status].push({ key, order });
+        } else {
+             grouped["Pending"].push({ key, order });
+        }
+    });
+
+    // 2. 渲染每个组
+    let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"];
+
+    statusOrder.forEach(status => {
+        if (grouped[status].length > 0) {
+            
+            // 🚀 NEW: 创建可折叠的头部
+            const groupWrapper = document.createElement("div");
+            groupWrapper.className = `status-group-wrapper status-${status.replace(/\s+/g, '')}`;
+            
+            const groupHeader = document.createElement("h3");
+            groupHeader.textContent = `${status} (${grouped[status].length})`;
+            groupHeader.className = 'status-group-header';
+            
+            const cardsContainer = document.createElement("div");
+            cardsContainer.className = 'cards-list-inner'; 
+            
+            // 检查并设置折叠状态
+            if (collapsedGroups[status]) {
+                groupHeader.classList.add('collapsed');
+                cardsContainer.style.display = 'none';
+            }
+
+            // 头部点击事件：切换折叠状态
+            groupHeader.addEventListener('click', () => {
+                const isCollapsed = groupHeader.classList.toggle('collapsed');
+                cardsContainer.style.display = isCollapsed ? 'none' : 'flex';
+                collapsedGroups[status] = isCollapsed; // 存储当前状态
+            });
+            
+            groupWrapper.appendChild(groupHeader);
+            
+            // 按时间戳降序排列 (最新订单在前)
+            grouped[status].sort((a, b) => b.order.timestamp - a.order.timestamp);
+
+            grouped[status].forEach(({ key, order }) => {
+              const card = createOrderCard(key, order, isSalesman, false);
+              cardsContainer.appendChild(card);
+            });
+            
+            groupWrapper.appendChild(cardsContainer);
+            ordersContainer.appendChild(groupWrapper);
+        }
+    });
+}
+
+// --- Firebase 监听器 ---
 if (ordersContainer || historyContainer) {
+    let allOrdersData = null; // 存储完整数据
+
     onValue(ref(db, "orders"), snapshot => {
-      const data = snapshot.val();
+      allOrdersData = snapshot.val();
       
-      // 🔔 检查新订单并播放声音
-      if (!isSalesman && data && audio) {
-          const currentOrderCount = Object.keys(data).filter(key => !data[key].deleted).length;
+      // 🔔 警报声逻辑 (使用完整数据)
+      if (!isSalesman && allOrdersData && audio) {
+          const currentOrderCount = Object.keys(allOrdersData).filter(key => !allOrdersData[key].deleted).length;
           
           if (lastOrderCount > 0 && currentOrderCount > lastOrderCount) {
               audio.play().catch(e => console.log("Audio play failed (user needs to interact first):", e)); 
@@ -448,56 +523,30 @@ if (ordersContainer || historyContainer) {
           lastOrderCount = currentOrderCount;
       }
       
-      if (ordersContainer) ordersContainer.innerHTML = "";
-      if (historyContainer) historyContainer.innerHTML = "";
-
-      if (!data) return;
-
-      const grouped = {
-        "Pending": [],
-        "Ordered": [],
-        "Pending Payment": [],
-        "Follow Up": [], // 🚀 新增状态
-        "Completed": []
-      };
-
-      Object.entries(data).forEach(([key, order]) => {
-        if (order.deleted) {
-          if (historyContainer) { 
-              const card = createOrderCard(key, order, isSalesman, true);
-              historyContainer.appendChild(card);
+      if (ordersContainer) {
+          // 渲染活动订单 (包含筛选和分组)
+          filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
+      }
+      
+      if (historyContainer) {
+          // 渲染历史订单 (不包含筛选)
+          historyContainer.innerHTML = "";
+          if (allOrdersData) {
+              Object.entries(allOrdersData).forEach(([key, order]) => {
+                  if (order.deleted) {
+                      const card = createOrderCard(key, order, isSalesman, true);
+                      historyContainer.appendChild(card);
+                  }
+              });
           }
-          return;
-        }
-        
-        // 确保所有订单都有一个状态，防止崩溃
-        const status = order.status || "Pending";
-        if (grouped[status]) { 
-            grouped[status].push({ key, order });
-        } else {
-             // 如果 Firebase 中有未定义的奇怪状态，归类到 Pending
-             grouped["Pending"].push({ key, order });
-        }
-      });
-
-      // 订单状态排序 - Pending -> Ordered -> Follow Up -> Pending Payment -> Completed
-      let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"]; // 🚀 更新排序
-
-      statusOrder.forEach(status => {
-        if (grouped[status].length > 0 && ordersContainer) {
-            const groupHeader = document.createElement("h3");
-            groupHeader.textContent = status;
-            groupHeader.className = 'status-group-header';
-            ordersContainer.appendChild(groupHeader);
-            
-            // 按时间戳降序排列 (最新订单在前)
-            grouped[status].sort((a, b) => b.order.timestamp - a.order.timestamp);
-
-            grouped[status].forEach(({ key, order }) => {
-              const card = createOrderCard(key, order, isSalesman, false);
-              ordersContainer.appendChild(card);
-            });
-        }
-      });
+      }
     });
+
+    // 🚀 NEW: 搜索输入事件监听器
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            // 每次输入都重新筛选和渲染，使用已存储的完整数据
+            filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
+        });
+    }
 }
