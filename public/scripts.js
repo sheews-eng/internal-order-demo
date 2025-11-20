@@ -22,6 +22,8 @@ const historyContainer = document.getElementById("history-container");
 // Salesman 多商品状态
 let currentItems = []; 
 let renderItemList;   
+// 🚀 新增: 用于存储正在编辑的订单 key
+let currentEditKey = null; 
 
 // 🔔 Admin 警报声逻辑
 let lastOrderCount = 0;
@@ -30,10 +32,43 @@ if (!isSalesman) {
     audio = new Audio('/ding.mp3'); 
 }
 
-// --- Salesman 功能 (多商品逻辑) ---
+// --- Salesman 功能 (多商品/编辑逻辑) ---
 if (isSalesman) {
     const addItemBtn = document.getElementById("addItemBtn");
     const itemListContainer = document.getElementById("item-list-container");
+    const submitBtn = form.querySelector('.submit-order-btn');
+    
+    // 🚀 新增: 渲染编辑模式的取消按钮和切换提交按钮文本
+    const updateFormUI = (isEditing) => {
+        const existingCancel = form.querySelector('.cancel-edit-btn');
+        if (existingCancel) existingCancel.remove();
+
+        if (isEditing) {
+            submitBtn.textContent = "Update Order";
+            submitBtn.classList.add('update-mode');
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.textContent = 'Cancel Edit';
+            cancelBtn.className = 'cancel-edit-btn';
+            cancelBtn.addEventListener('click', resetForm);
+            submitBtn.parentNode.insertBefore(cancelBtn, submitBtn);
+        } else {
+            submitBtn.textContent = "Submit Order";
+            submitBtn.classList.remove('update-mode');
+        }
+    };
+    
+    // 🚀 新增: 重置表单和 UI
+    const resetForm = () => {
+        form.customer.value = "";
+        form.poNumber.value = "";
+        form.delivery.value = "";
+        currentItems = [];
+        currentEditKey = null;
+        renderItemList();
+        updateFormUI(false);
+    };
 
     renderItemList = function() {
         itemListContainer.innerHTML = "";
@@ -87,7 +122,7 @@ if (isSalesman) {
         renderItemList();
     });
     
-    // 提交订单
+    // 提交/更新订单
     form.addEventListener("submit", e => {
         e.preventDefault();
 
@@ -95,26 +130,35 @@ if (isSalesman) {
             alert("Please add at least one item to the order before submitting.");
             return;
         }
-
+        
+        // 🚀 新增: 如果是更新模式，保留现有状态/删除标记/时间戳/评论
+        const existingOrder = currentEditKey ? ordersContainer.querySelector(`.card[data-key="${currentEditKey}"]`) : null;
+        
         const data = {
             customer: form.customer.value,
             poNumber: form.poNumber.value,
             delivery: form.delivery.value,
             orderItems: currentItems, 
-            status: "Pending", // Salesman 提交状态为 Pending
-            deleted: false,
-            timestamp: Date.now(),
-            comment: "" 
+            status: currentEditKey ? (existingOrder?.dataset?.status || "Pending") : "Pending", // 保持状态不变
+            deleted: currentEditKey ? (existingOrder?.dataset?.deleted === 'true') : false, // 保持删除标记不变
+            timestamp: currentEditKey ? (parseInt(existingOrder?.dataset?.timestamp) || Date.now()) : Date.now(), // 保持原始时间戳
+            comment: currentEditKey ? (existingOrder?.dataset?.comment || "") : "" 
         };
-
-        const ordersRef = ref(db, "orders");
-        push(ordersRef, data);
         
-        form.customer.value = "";
-        form.poNumber.value = "";
-        form.delivery.value = "";
-        currentItems = []; 
-        renderItemList();
+        if (currentEditKey) {
+            // 更新现有订单
+            set(ref(db, `orders/${currentEditKey}`), data)
+                .then(() => {
+                    alert(`Order ${currentEditKey} updated successfully.`);
+                    resetForm();
+                })
+                .catch(error => console.error("Update failed:", error));
+        } else {
+            // 提交新订单
+            const ordersRef = ref(db, "orders");
+            push(ordersRef, data);
+            resetForm();
+        }
     });
 
     renderItemList(); 
@@ -125,7 +169,15 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const div = document.createElement("div");
     div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')}`;
     
-    // 1. 基本信息 (omitted for brevity)
+    // 🚀 新增: 添加 data 属性用于 Salesman 编辑逻辑中的状态和时间戳检索
+    div.setAttribute('data-key', key);
+    div.setAttribute('data-status', order.status);
+    div.setAttribute('data-timestamp', order.timestamp);
+    div.setAttribute('data-deleted', order.deleted);
+    div.setAttribute('data-comment', order.comment || '');
+
+    // ... (基本信息, 商品列表, 时间戳, 评论显示与输入 - 逻辑保持不变) ...
+
     const infoContainer = document.createElement('div');
     infoContainer.className = 'order-info';
     infoContainer.innerHTML = `
@@ -135,7 +187,6 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     `;
     div.appendChild(infoContainer);
 
-    // 2. 商品列表 (omitted for brevity)
     const itemsListContainer = document.createElement('div');
     itemsListContainer.className = 'items-list'; 
     itemsListContainer.innerHTML = "<b>Items:</b>";
@@ -152,13 +203,11 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     }
     div.appendChild(itemsListContainer);
     
-    // 3. 时间戳 (omitted for brevity)
     const timeSpan = document.createElement("span");
     timeSpan.className = "timestamp"; 
     timeSpan.textContent = `Submitted: ${new Date(order.timestamp).toLocaleString()}`;
     div.appendChild(timeSpan);
     
-    // 4. 评论显示与输入
     const commentContainer = document.createElement('div');
     commentContainer.className = 'comment-container';
     
@@ -184,8 +233,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
         commentContainer.appendChild(saveCommentBtn);
     }
     div.appendChild(commentContainer);
-
-    // 5. 操作区域
+    
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'actions-container'; 
     
@@ -197,18 +245,15 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             const statusSelect = document.createElement("select");
             statusSelect.title = "Change Order Status"; 
             
-            // 🚨 关键修复：Admin 不能将状态设回 Pending。
             let statusOptions = ["Ordered", "Completed", "Pending Payment"]; 
             
             if (isCompleted) {
-                // Completed 订单不能改回
                 statusOptions = statusOptions.filter(s => s === "Completed");
             }
-            // 确保当前状态被包含在选项中
+            
             if (!statusOptions.includes(order.status)) {
                 statusOptions.unshift(order.status);
             }
-
 
             statusOptions.forEach(s => {
               const option = document.createElement("option");
@@ -233,19 +278,19 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             editBtn.title = isCompleted ? "Completed orders cannot be edited." : "Edit Order";
             editBtn.addEventListener("click", () => {
               if (isCompleted) return; 
-
+              
+              // 🚀 优化 2: 加载数据到表单，切换到编辑模式，不删除旧订单
+              currentEditKey = key; 
               form.customer.value = order.customer;
               form.poNumber.value = order.poNumber;
               form.delivery.value = order.delivery;
               
               currentItems = order.orderItems || []; 
+              renderItemList(); 
+              updateFormUI(true); // 切换 UI 为更新模式
               
-              if (confirm("Order details will be loaded into the form. The old record will be deleted.")) {
-                  if (typeof renderItemList === 'function') {
-                      renderItemList(); 
-                  }
-                  remove(ref(db, `orders/${key}`)); 
-              }
+              // 滚动到表单顶部
+              form.scrollIntoView({ behavior: 'smooth' });
             });
             actionsContainer.appendChild(editBtn);
         }
@@ -271,7 +316,24 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             const permDeleteBtn = document.createElement("button");
             permDeleteBtn.textContent = "Permanent Delete";
             permDeleteBtn.className = "perm-delete-btn"; 
+            
+            const timeDifference = Date.now() - order.timestamp;
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+            const isTooSoon = isCompleted && (timeDifference < twentyFourHours);
+            
+            // 🚀 优化 1: 24小时永久删除限制
+            permDeleteBtn.disabled = isTooSoon;
+            if (isTooSoon) {
+                const timeRemaining = twentyFourHours - timeDifference;
+                const hours = Math.floor(timeRemaining / 3600000);
+                const minutes = Math.floor((timeRemaining % 3600000) / 60000);
+                permDeleteBtn.title = `Must wait ${hours}h ${minutes}m (24 hours after completion) to permanently delete.`;
+            } else {
+                permDeleteBtn.title = "Permanently delete this order.";
+            }
+
             permDeleteBtn.addEventListener("click", () => {
+                if (permDeleteBtn.disabled) return;
                 if (confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
                     remove(ref(db, `orders/${key}`));
                 }
@@ -325,10 +387,8 @@ if (ordersContainer || historyContainer) {
         }
       });
 
-      // 🚨 关键修复：Admin 视图恢复 Pending 状态的显示
+      // 订单状态排序
       let statusOrder = ["Pending", "Ordered", "Completed", "Pending Payment"];
-
-      // 保持 statusOrder 包含 Pending，以便显示 Salesman 提交的新订单。
 
       statusOrder.forEach(status => {
         if (grouped[status].length > 0 && ordersContainer) {
