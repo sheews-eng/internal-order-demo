@@ -206,7 +206,7 @@ if (isSalesman) {
 // --- Helper: 创建订单卡片 ---
 function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const div = document.createElement("div");
-    // 🚀 新增: 如果有评论，添加 'has-comment' class
+    // 如果有评论，添加 'has-comment' class (用于整个卡片边框高亮)
     const hasCommentClass = order.comment && order.comment.trim() !== "" ? 'has-comment' : '';
     div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')} ${hasCommentClass}`;
     
@@ -253,10 +253,16 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const commentContainer = document.createElement('div');
     commentContainer.className = 'comment-container';
     
-    // 🚀 新增: 如果有评论，高亮 Comment 标题
-    const commentClass = order.comment && order.comment.trim() !== "" ? 'comment-highlight' : '';
+    // 检查是否有评论
+    const hasComment = order.comment && order.comment.trim() !== "";
+    
+    // 🚀 关键修改: 包装评论内容，使其可以被 CSS 高亮
+    const commentContentHTML = hasComment 
+        ? `<span class="comment-content-highlight">${order.comment}</span>` 
+        : 'N/A';
+        
     const commentText = document.createElement('span');
-    commentText.innerHTML = `<b class="${commentClass}">Comment:</b> ${order.comment || 'N/A'}`;
+    commentText.innerHTML = `<b>Comment:</b> ${commentContentHTML}`; 
     commentContainer.appendChild(commentText);
 
     if (!isSalesmanPage && !isHistory) {
@@ -436,7 +442,7 @@ if (ordersContainer || historyContainer) {
         }
       });
 
-      // 🚀 核心修改: 订单状态排序 - Pending -> Ordered -> Pending Payment -> Completed
+      // 订单状态排序 - Pending -> Ordered -> Pending Payment -> Completed
       let statusOrder = ["Pending", "Ordered", "Pending Payment", "Completed"];
 
       statusOrder.forEach(status => {

@@ -1,13 +1,14 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f0f2f5;
+  /* 调整背景色为更淡的灰色或纯白 */
+  background: #f8f8f8; 
   padding: 20px;
-  color: #333;
+  color: #434243; /* 替换为新的深色 */
 }
 
 h1, h2, h3 {
   text-align: center;
-  color: #2c3e50;
+  color: #434243; /* 替换为新的深色 */
   margin-bottom: 15px;
 }
 
@@ -17,7 +18,7 @@ h1, h2, h3 {
     max-width: 500px;
     margin: 20px auto;
     padding: 20px;
-    background: #fff;
+    background: #FFFFFF; /* 替换为纯白 */
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
@@ -52,12 +53,12 @@ h1, h2, h3 {
     padding: 10px;
     font-size: 16px;
     margin-top: 20px;
-    background-color: #3498db;
-    color: white;
+    background-color: #FF9012; /* 替换为新的主色 */
+    color: #FFFFFF; /* 按钮文字为白色 */
 }
 
 .submit-order-btn:hover:not([disabled]) {
-  background-color: #2980b9;
+  background-color: #e68210; /* FF9012 的深色版本 */
 }
 
 /* --- Multi-Item Input Group (Add Item Area) --- */
@@ -85,13 +86,13 @@ h1, h2, h3 {
 }
 #addItemBtn {
     flex: 0 0 auto;
-    background-color: #27ae60;
-    color: white;
+    background-color: #FF9012; /* 替换为新的主色 */
+    color: #FFFFFF;
     height: 38px;
     line-height: 22px;
 }
 #addItemBtn:hover:not([disabled]) {
-    background-color: #219d53;
+    background-color: #e68210;
 }
 
 /* --- Salesman Edit Mode Styles --- */
@@ -109,12 +110,12 @@ h1, h2, h3 {
 
 /* 更新订单按钮 */
 .order-form .submit-order-btn.update-mode {
-    background-color: #2ecc71; 
+    background-color: #38c47b; /* 绿色系保留，用于表示 "更新/成功" */
     width: calc(70% - 10px); 
     display: inline-block;
 }
 .order-form .submit-order-btn.update-mode:hover {
-    background-color: #27ae60;
+    background-color: #2da163;
 }
 
 
@@ -187,7 +188,7 @@ h1, h2, h3 {
 }
 
 .card {
-  background: #fff;
+  background: #FFFFFF; /* 替换为纯白 */
   border-radius: 10px;
   padding: 15px;
   border: 1px solid #ccc;
@@ -205,10 +206,10 @@ h1, h2, h3 {
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-/* 🚀 新增: Admin Remark Highlight Styles */
+/* Admin Remark Highlight (Card Border) */
 .card.has-comment {
-    border: 2px solid #f39c12; /* 橙色边框 */
-    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.2);
+    border: 2px solid #FF9012; /* 替换为新的主色作为边框 */
+    box-shadow: 0 4px 12px rgba(255, 144, 18, 0.3); /* 使用主色阴影 */
 }
 
 .card span {
@@ -233,6 +234,19 @@ h1, h2, h3 {
     color: #444;
     margin-bottom: 5px;
 }
+
+/* 关键新增: 高亮实际的备注文本内容 */
+.comment-content-highlight {
+    display: inline-block; 
+    background-color: #FFF2E6; /* 基于 FF9012 的超浅背景 */
+    color: #434243; /* 备注文本使用深色，确保可读性 */
+    padding: 2px 5px;
+    margin-left: 5px; 
+    border-radius: 3px;
+    font-weight: 600; 
+    white-space: pre-wrap;
+}
+
 .comment-input {
     width: 100%;
     height: 60px;
@@ -244,21 +258,15 @@ h1, h2, h3 {
     resize: vertical;
 }
 .save-comment-btn {
-    background-color: #f39c12; 
-    color: white;
+    background-color: #FF9012; /* 替换为新的主色 */
+    color: #FFFFFF;
     align-self: flex-end;
     margin-top: 0;
     max-width: 120px;
 }
 .save-comment-btn:hover:not([disabled]) {
-    background-color: #e67e22;
+    background-color: #e68210;
 }
-/* 🚀 新增: 高亮 Comment 标题 */
-.comment-highlight {
-    color: #e67e22; /* 深橙色文本 */
-    font-weight: bold;
-}
-
 
 /* Items List Display Styles */
 .items-list {
@@ -300,7 +308,7 @@ h1, h2, h3 {
 }
 
 .delete-btn {
-    background-color: #e74c3c;
+    background-color: #e74c3c; /* 红色系保持不变，用于表示删除/危险 */
     color: white;
 }
 .delete-btn:hover:not([disabled]) {
@@ -329,28 +337,30 @@ h1, h2, h3 {
     width: 100%;
     margin: 20px 0 10px;
     padding: 5px;
-    border-bottom: 2px solid #3498db;
-    color: #3498db;
+    /* 替换为新的主色 */
+    border-bottom: 2px solid #FF9012; 
+    color: #434243; /* 标题文字使用新的深色 */
     font-size: 1.5em;
 }
 
 
 /* 订单状态样式 */
+/* 使用新的主色调和对比色调整状态颜色 */
 .card.status-Pending {
-  background-color: #fff3cd; 
-  border-left: 5px solid #ffc107;
+  background-color: #FFF2E6; /* 基于 FF9012 的超浅背景 */
+  border-left: 5px solid #FF9012; /* 橙色边框 */
 }
 .card.status-Ordered {
-  background-color: #d1ecf1; 
-  border-left: 5px solid #17a2b8;
+  background-color: #E6F7FF; /* 浅蓝色或中性色 */
+  border-left: 5px solid #17a2b8; /* 蓝色边框 */
 }
 .card.status-Completed {
-  background-color: #d4edda; 
-  border-left: 5px solid #28a745;
+  background-color: #d4edda; /* 绿色系保留，表示完成 */
+  border-left: 5px solid #38c47b; /* 绿色边框 */
 }
 .card.status-PendingPayment {
-  background-color: #f8d7da; 
-  border-left: 5px solid #dc3545;
+  background-color: #f8d7da; /* 红色系保留，表示警告/需关注 */
+  border-left: 5px solid #dc3545; /* 红色边框 */
 }
 
 .no-items {
