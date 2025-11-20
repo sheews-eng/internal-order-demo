@@ -23,11 +23,10 @@ const historyContainer = document.getElementById("history-container");
 let currentItems = []; 
 let renderItemList;   
 
-// 🔔 新功能 1: Admin 警报声逻辑
+// 🔔 Admin 警报声逻辑
 let lastOrderCount = 0;
 let audio;
 if (!isSalesman) {
-    // 动态加载音频文件
     audio = new Audio('/ding.mp3'); 
 }
 
@@ -102,10 +101,10 @@ if (isSalesman) {
             poNumber: form.poNumber.value,
             delivery: form.delivery.value,
             orderItems: currentItems, 
-            status: "Pending",
+            status: "Pending", // Salesman 提交状态为 Pending
             deleted: false,
             timestamp: Date.now(),
-            comment: "" // 💬 新增 Comment 字段
+            comment: "" 
         };
 
         const ordersRef = ref(db, "orders");
@@ -121,12 +120,12 @@ if (isSalesman) {
     renderItemList(); 
 }
 
-// --- Helper: 创建订单卡片 (适配所有新功能) ---
+// --- Helper: 创建订单卡片 ---
 function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const div = document.createElement("div");
     div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')}`;
     
-    // 1. 基本信息
+    // 1. 基本信息 (omitted for brevity)
     const infoContainer = document.createElement('div');
     infoContainer.className = 'order-info';
     infoContainer.innerHTML = `
@@ -136,7 +135,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     `;
     div.appendChild(infoContainer);
 
-    // 2. 商品列表
+    // 2. 商品列表 (omitted for brevity)
     const itemsListContainer = document.createElement('div');
     itemsListContainer.className = 'items-list'; 
     itemsListContainer.innerHTML = "<b>Items:</b>";
@@ -153,13 +152,13 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     }
     div.appendChild(itemsListContainer);
     
-    // 3. 时间戳
+    // 3. 时间戳 (omitted for brevity)
     const timeSpan = document.createElement("span");
     timeSpan.className = "timestamp"; 
     timeSpan.textContent = `Submitted: ${new Date(order.timestamp).toLocaleString()}`;
     div.appendChild(timeSpan);
     
-    // 4. 💬 评论显示与输入 (新功能 3)
+    // 4. 评论显示与输入
     const commentContainer = document.createElement('div');
     commentContainer.className = 'comment-container';
     
@@ -198,15 +197,13 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             const statusSelect = document.createElement("select");
             statusSelect.title = "Change Order Status"; 
             
-            // 状态选项：Completed 订单不能改回
-            let statusOptions = ["Pending", "Ordered", "Completed", "Pending Payment"];
+            // 🚨 关键修复：Admin 不能将状态设回 Pending。
+            let statusOptions = ["Ordered", "Completed", "Pending Payment"]; 
+            
             if (isCompleted) {
-                // 移除 Ordered 和 Pending Payment，Completed 订单不能改回
+                // Completed 订单不能改回
                 statusOptions = statusOptions.filter(s => s === "Completed");
             }
-            // Admin 不需要把状态设为 Pending (默认只有 Salesman 提交时是 Pending)
-            statusOptions = statusOptions.filter(s => s !== "Pending");
-            
             // 确保当前状态被包含在选项中
             if (!statusOptions.includes(order.status)) {
                 statusOptions.unshift(order.status);
@@ -227,17 +224,16 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             actionsContainer.appendChild(statusSelect);
         }
 
-        // Salesman: Edit (新功能 5: Completed 限制)
+        // Salesman: Edit (Completed 限制)
         if (isSalesmanPage) {
             
             const editBtn = document.createElement("button");
             editBtn.textContent = "Edit";
-            editBtn.disabled = isCompleted; // 禁用
+            editBtn.disabled = isCompleted; 
             editBtn.title = isCompleted ? "Completed orders cannot be edited." : "Edit Order";
             editBtn.addEventListener("click", () => {
               if (isCompleted) return; 
 
-              // 恢复表单数据
               form.customer.value = order.customer;
               form.poNumber.value = order.poNumber;
               form.delivery.value = order.delivery;
@@ -248,18 +244,18 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
                   if (typeof renderItemList === 'function') {
                       renderItemList(); 
                   }
-                  remove(ref(db, `orders/${key}`)); // 删除旧订单
+                  remove(ref(db, `orders/${key}`)); 
               }
             });
             actionsContainer.appendChild(editBtn);
         }
         
-        // Soft Delete (新功能 5: Completed 限制)
+        // Soft Delete (Completed 限制)
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
         deleteBtn.className = "delete-btn";
         
-        deleteBtn.disabled = isCompleted; // 禁用
+        deleteBtn.disabled = isCompleted; 
         deleteBtn.title = isCompleted ? "Completed orders must be permanently deleted by Admin from history." : "Soft Delete";
 
         deleteBtn.addEventListener("click", () => {
@@ -270,7 +266,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
         
     } else {
         // History Display
-        // 🗑️ 新功能 4: Permanent Delete button for History (仅在 Admin 页面显示)
+        // Permanent Delete button for History (仅在 Admin 页面显示)
         if (!isSalesmanPage) {
             const permDeleteBtn = document.createElement("button");
             permDeleteBtn.textContent = "Permanent Delete";
@@ -293,12 +289,11 @@ if (ordersContainer || historyContainer) {
     onValue(ref(db, "orders"), snapshot => {
       const data = snapshot.val();
       
-      // 🔔 新功能 1: 检查新订单并播放声音
+      // 🔔 检查新订单并播放声音
       if (!isSalesman && data && audio) {
           const currentOrderCount = Object.keys(data).filter(key => !data[key].deleted).length;
           
           if (lastOrderCount > 0 && currentOrderCount > lastOrderCount) {
-              // 尝试播放声音，如果浏览器政策阻止，则会捕获错误
               audio.play().catch(e => console.log("Audio play failed (user needs to interact first):", e)); 
           }
           lastOrderCount = currentOrderCount;
@@ -330,13 +325,10 @@ if (ordersContainer || historyContainer) {
         }
       });
 
-      // ❌ 新功能 2: Admin Status Filter (Admin 不显示 Pending)
+      // 🚨 关键修复：Admin 视图恢复 Pending 状态的显示
       let statusOrder = ["Pending", "Ordered", "Completed", "Pending Payment"];
 
-      if (!isSalesman) {
-          // Admin view: 排除 "Pending" 状态
-          statusOrder = ["Ordered", "Completed", "Pending Payment"]; 
-      }
+      // 保持 statusOrder 包含 Pending，以便显示 Salesman 提交的新订单。
 
       statusOrder.forEach(status => {
         if (grouped[status].length > 0 && ordersContainer) {
