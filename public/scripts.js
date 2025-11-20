@@ -22,7 +22,6 @@ const historyContainer = document.getElementById("history-container");
 // Salesman 多商品状态
 let currentItems = []; 
 let renderItemList;   
-// 🚀 新增: 用于存储正在编辑的订单 key
 let currentEditKey = null; 
 
 // 🔔 Admin 警报声逻辑
@@ -38,7 +37,7 @@ if (isSalesman) {
     const itemListContainer = document.getElementById("item-list-container");
     const submitBtn = form.querySelector('.submit-order-btn');
     
-    // 🚀 新增: 渲染编辑模式的取消按钮和切换提交按钮文本
+    // 切换提交按钮文本和显示/隐藏取消按钮
     const updateFormUI = (isEditing) => {
         const existingCancel = form.querySelector('.cancel-edit-btn');
         if (existingCancel) existingCancel.remove();
@@ -59,7 +58,7 @@ if (isSalesman) {
         }
     };
     
-    // 🚀 新增: 重置表单和 UI
+    // 重置表单和 UI
     const resetForm = () => {
         form.customer.value = "";
         form.poNumber.value = "";
@@ -70,6 +69,7 @@ if (isSalesman) {
         updateFormUI(false);
     };
 
+    // 🚀 核心修改: renderItemList 函数 - 使商品列表项目可编辑
     renderItemList = function() {
         itemListContainer.innerHTML = "";
         if (currentItems.length === 0) {
@@ -79,15 +79,21 @@ if (isSalesman) {
 
         currentItems.forEach((item, index) => {
             const itemDiv = document.createElement("div");
-            itemDiv.className = "card item-preview";
-            itemDiv.style.display = 'flex';
-            itemDiv.style.justifyContent = 'space-between';
-            itemDiv.style.alignItems = 'center';
-            itemDiv.style.padding = '8px';
+            itemDiv.className = "card item-preview editable-item";
+            
+            // 将价格字符串 "RM X.XX" 转换为数字 X.XX，便于输入框使用
+            const priceValue = parseFloat(item.price.replace('RM ', ''));
 
             itemDiv.innerHTML = `
-                <span><b>Item:</b> ${item.itemDesc} (${item.units} x ${item.price})</span>
+                <div class="item-detail-row">
+                    <label>Item Description: <input type="text" value="${item.itemDesc}" data-field="itemDesc" data-index="${index}"></label>
+                </div>
+                <div class="item-detail-row">
+                    <label>Units: <input type="number" value="${item.units}" data-field="units" data-index="${index}" min="1"></label>
+                    <label>Price (RM): <input type="number" value="${priceValue.toFixed(2)}" data-field="price" data-index="${index}" step="0.01" min="0.01"></label>
+                </div>
             `;
+            
             const removeBtn = document.createElement("button");
             removeBtn.textContent = "Remove";
             removeBtn.className = "remove-item-btn";
@@ -95,10 +101,39 @@ if (isSalesman) {
                 currentItems.splice(index, 1);
                 renderItemList();
             });
-            itemDiv.appendChild(removeBtn);
+            
+            const inputFields = itemDiv.querySelectorAll('input');
+            inputFields.forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    const field = e.target.dataset.field;
+                    let value = e.target.value;
+
+                    if (field === 'units') {
+                        value = Math.max(1, parseInt(value) || 1);
+                        e.target.value = value;
+                        currentItems[idx].units = value;
+                    } else if (field === 'price') {
+                        value = parseFloat(value) || 0.01;
+                        e.target.value = value.toFixed(2);
+                        currentItems[idx].price = `RM ${value.toFixed(2)}`;
+                    } else if (field === 'itemDesc') {
+                        currentItems[idx].itemDesc = value;
+                    }
+                    // 不需要重新渲染整个列表，只需更新 currentItems
+                    // console.log('Item updated:', currentItems[idx]);
+                });
+            });
+
+            const actionRow = document.createElement('div');
+            actionRow.className = 'item-action-row';
+            actionRow.appendChild(removeBtn);
+
+            itemDiv.appendChild(actionRow);
             itemListContainer.appendChild(itemDiv);
         });
     }; 
+    // -------------------------------------------------------------
 
     addItemBtn.addEventListener("click", () => {
         const itemDesc = document.getElementById("itemDesc").value;
@@ -131,18 +166,26 @@ if (isSalesman) {
             return;
         }
         
-        // 🚀 新增: 如果是更新模式，保留现有状态/删除标记/时间戳/评论
-        const existingOrder = currentEditKey ? ordersContainer.querySelector(`.card[data-key="${currentEditKey}"]`) : null;
+        // 确保所有商品项的描述都不为空
+        const invalidItem = currentItems.find(item => !item.itemDesc || item.units <= 0 || parseFloat(item.price.replace('RM ', '')) <= 0);
+        if (invalidItem) {
+            alert("Please ensure all item descriptions, units, and prices are valid and non-zero.");
+            return;
+        }
+
+
+        // 获取正在编辑的订单的现有数据（用于保留状态/时间戳）
+        const existingCard = document.querySelector(`.card[data-key="${currentEditKey}"]`);
         
         const data = {
             customer: form.customer.value,
             poNumber: form.poNumber.value,
             delivery: form.delivery.value,
             orderItems: currentItems, 
-            status: currentEditKey ? (existingOrder?.dataset?.status || "Pending") : "Pending", // 保持状态不变
-            deleted: currentEditKey ? (existingOrder?.dataset?.deleted === 'true') : false, // 保持删除标记不变
-            timestamp: currentEditKey ? (parseInt(existingOrder?.dataset?.timestamp) || Date.now()) : Date.now(), // 保持原始时间戳
-            comment: currentEditKey ? (existingOrder?.dataset?.comment || "") : "" 
+            status: currentEditKey ? (existingCard?.dataset?.status || "Pending") : "Pending", 
+            deleted: currentEditKey ? (existingCard?.dataset?.deleted === 'true') : false, 
+            timestamp: currentEditKey ? (parseInt(existingCard?.dataset?.timestamp) || Date.now()) : Date.now(), 
+            comment: currentEditKey ? (existingCard?.dataset?.comment || "") : "" 
         };
         
         if (currentEditKey) {
@@ -164,20 +207,18 @@ if (isSalesman) {
     renderItemList(); 
 }
 
-// --- Helper: 创建订单卡片 ---
+// --- Helper: 创建订单卡片 (逻辑不变) ---
 function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const div = document.createElement("div");
     div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')}`;
     
-    // 🚀 新增: 添加 data 属性用于 Salesman 编辑逻辑中的状态和时间戳检索
     div.setAttribute('data-key', key);
     div.setAttribute('data-status', order.status);
     div.setAttribute('data-timestamp', order.timestamp);
     div.setAttribute('data-deleted', order.deleted);
     div.setAttribute('data-comment', order.comment || '');
 
-    // ... (基本信息, 商品列表, 时间戳, 评论显示与输入 - 逻辑保持不变) ...
-
+    // 1. 基本信息
     const infoContainer = document.createElement('div');
     infoContainer.className = 'order-info';
     infoContainer.innerHTML = `
@@ -187,6 +228,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     `;
     div.appendChild(infoContainer);
 
+    // 2. 商品列表
     const itemsListContainer = document.createElement('div');
     itemsListContainer.className = 'items-list'; 
     itemsListContainer.innerHTML = "<b>Items:</b>";
@@ -203,11 +245,13 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     }
     div.appendChild(itemsListContainer);
     
+    // 3. 时间戳
     const timeSpan = document.createElement("span");
     timeSpan.className = "timestamp"; 
     timeSpan.textContent = `Submitted: ${new Date(order.timestamp).toLocaleString()}`;
     div.appendChild(timeSpan);
     
+    // 4. 评论显示与输入
     const commentContainer = document.createElement('div');
     commentContainer.className = 'comment-container';
     
@@ -234,6 +278,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     }
     div.appendChild(commentContainer);
     
+    // 5. 操作区域
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'actions-container'; 
     
@@ -279,17 +324,16 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             editBtn.addEventListener("click", () => {
               if (isCompleted) return; 
               
-              // 🚀 优化 2: 加载数据到表单，切换到编辑模式，不删除旧订单
               currentEditKey = key; 
               form.customer.value = order.customer;
               form.poNumber.value = order.poNumber;
               form.delivery.value = order.delivery;
               
-              currentItems = order.orderItems || []; 
+              // Deep copy the array to avoid reference issues
+              currentItems = JSON.parse(JSON.stringify(order.orderItems || [])); 
               renderItemList(); 
-              updateFormUI(true); // 切换 UI 为更新模式
+              updateFormUI(true); 
               
-              // 滚动到表单顶部
               form.scrollIntoView({ behavior: 'smooth' });
             });
             actionsContainer.appendChild(editBtn);
@@ -311,7 +355,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
         
     } else {
         // History Display
-        // Permanent Delete button for History (仅在 Admin 页面显示)
+        // Permanent Delete button for History (Admin 24小时限制)
         if (!isSalesmanPage) {
             const permDeleteBtn = document.createElement("button");
             permDeleteBtn.textContent = "Permanent Delete";
@@ -321,7 +365,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             const twentyFourHours = 24 * 60 * 60 * 1000;
             const isTooSoon = isCompleted && (timeDifference < twentyFourHours);
             
-            // 🚀 优化 1: 24小时永久删除限制
+            // 24小时永久删除限制
             permDeleteBtn.disabled = isTooSoon;
             if (isTooSoon) {
                 const timeRemaining = twentyFourHours - timeDifference;
