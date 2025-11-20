@@ -86,7 +86,7 @@ if (isSalesman) {
 
             itemDiv.innerHTML = `
                 <div class="item-detail-row">
-                    <label>Item Description: <input type="text" value="${item.itemDesc}" data-field="itemDesc" data-index="${index}"></label>
+                    <label>Item Description: <input type="text" value="${item.itemDesc || ''}" data-field="itemDesc" data-index="${index}"></label>
                 </div>
                 <div class="item-detail-row">
                     <label>Units: <input type="number" value="${item.units}" data-field="units" data-index="${index}" min="1"></label>
@@ -136,9 +136,10 @@ if (isSalesman) {
         const itemDesc = document.getElementById("itemDesc").value;
         const units = document.getElementById("units").value;
         const price = document.getElementById("price").value;
-
-        if (!itemDesc || units <= 0 || price <= 0) {
-            alert("Please enter valid item details, units, and price.");
+        
+        // 允许 itemDesc 为空，但 units 和 price 必须大于 0
+        if (units <= 0 || price <= 0) {
+            alert("Please enter valid item units and price (must be greater than 0).");
             return;
         }
 
@@ -163,10 +164,10 @@ if (isSalesman) {
             return;
         }
         
-        // 确保所有商品项的描述都不为空
-        const invalidItem = currentItems.find(item => !item.itemDesc || item.units <= 0 || parseFloat(item.price.replace('RM ', '')) <= 0);
+        // 🚀 关键修改: 移除对 itemDesc 的非空检查，只检查 units 和 price
+        const invalidItem = currentItems.find(item => item.units <= 0 || parseFloat(item.price.replace('RM ', '')) <= 0);
         if (invalidItem) {
-            alert("Please ensure all item descriptions, units, and prices are valid and non-zero.");
+            alert("Please ensure all item units and prices are valid and non-zero.");
             return;
         }
 
@@ -235,7 +236,9 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
         order.orderItems.forEach(item => {
             const itemSpan = document.createElement('span');
             itemSpan.className = 'item-detail';
-            itemSpan.innerHTML = `${item.itemDesc} (${item.units} x ${item.price})`;
+            // 如果描述为空，显示 N/A
+            const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
+            itemSpan.innerHTML = `${itemDescDisplay} (${item.units} x ${item.price})`;
             itemsListContainer.appendChild(itemSpan);
         });
     } else {
@@ -256,7 +259,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     // 检查是否有评论
     const hasComment = order.comment && order.comment.trim() !== "";
     
-    // 🚀 关键修改: 包装评论内容，使其可以被 CSS 高亮
+    // 包装评论内容，使其可以被 CSS 高亮
     const commentContentHTML = hasComment 
         ? `<span class="comment-content-highlight">${order.comment}</span>` 
         : 'N/A';
@@ -265,8 +268,9 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     commentText.innerHTML = `<b>Comment:</b> ${commentContentHTML}`; 
     commentContainer.appendChild(commentText);
 
-    if (!isSalesmanPage && !isHistory) {
-        // Admin: Add/Edit Comment area
+    // 🚀 修改: Salesman 和 Admin 都可以添加/编辑评论，只要不是历史订单
+    if (!isHistory) { 
+        // Admin/Salesman: Add/Edit Comment area
         const commentInput = document.createElement('textarea');
         commentInput.placeholder = "Add or edit comment...";
         commentInput.value = order.comment || '';
