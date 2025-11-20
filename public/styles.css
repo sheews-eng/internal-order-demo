@@ -1,7 +1,9 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* 基础背景色 */
   background: #f8f8f8; 
   padding: 20px;
+  /* 主文字色 */
   color: #434243; 
 }
 
@@ -64,7 +66,7 @@ h1, h2, h3 {
     padding: 10px;
     font-size: 16px;
     margin-top: 20px;
-    background-color: #FF9012; 
+    background-color: #FF9012; /* 主色 */
     color: #FFFFFF; 
 }
 
@@ -178,7 +180,7 @@ h1, h2, h3 {
 }
 
 
-/* --- Filter/Search Bar Styles 🚀 NEW --- */
+/* --- Filter/Search Bar Styles --- */
 #filter-controls {
     max-width: 800px;
     margin: 20px auto 30px;
@@ -218,13 +220,28 @@ h1, h2, h3 {
   justify-content: center;
 }
 
+/* 状态分组容器，用于实现折叠 */
+.status-group-wrapper {
+    width: 100%;
+    max-width: 900px; /* 限制分组宽度，保持居中 */
+}
+
+.cards-list-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    /* 继承 card-container 的样式 */
+}
+
+
 .card {
   background: #FFFFFF; 
   border-radius: 10px;
   padding: 15px;
   border: 1px solid #ccc;
   min-width: 300px;
-  width: calc(33% - 15px);
+  width: calc(33.333% - 15px); /* 保持三列布局 */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -375,22 +392,22 @@ h1, h2, h3 {
   border-left: 5px solid #909399;
 }
 
-/* 状态分组标题 (可点击) 🚀 UPDATED */
+/* 状态分组标题 (可点击实现折叠) */
 .status-group-header {
     text-align: center;
     width: 100%;
     margin: 20px 0 10px;
-    padding: 5px;
+    padding: 10px;
     border-bottom: 2px solid #FF9012; 
     color: #434243; 
     font-size: 1.5em;
-    cursor: pointer; /* 增加点击手势 */
+    cursor: pointer; 
     user-select: none;
     position: relative;
     padding-right: 30px;
 }
 .status-group-header::after {
-    content: '▲'; /* 默认显示向上箭头 */
+    content: '▲'; 
     position: absolute;
     right: 10px;
     top: 50%;
@@ -430,4 +447,21 @@ h1, h2, h3 {
     width: 100%;
     text-align: center;
     color: #aaa;
+}
+
+/* 响应式调整 */
+@media (max-width: 900px) {
+    .card {
+        width: calc(50% - 10px); /* 在小屏幕上改为两列 */
+    }
+    .status-group-header {
+        max-width: 95%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+@media (max-width: 600px) {
+    .card {
+        width: 100%; /* 在更小的屏幕上改为一列 */
+    }
 }

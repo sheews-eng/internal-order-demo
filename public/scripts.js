@@ -15,10 +15,10 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const form = document.getElementById("order-form"); 
-const isSalesman = form !== null;
+const isSalesman = form !== null; // 通过检查表单是否存在来判断是 Salesman 还是 Admin
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
-const searchInput = document.getElementById("orderSearch"); // 🚀 NEW: 搜索输入框
+const searchInput = document.getElementById("orderSearch"); 
 
 // Salesman 多商品状态
 let currentItems = []; 
@@ -105,7 +105,6 @@ if (isSalesman) {
             removeBtn.textContent = "Remove";
             removeBtn.className = "remove-item-btn";
             removeBtn.addEventListener("click", () => {
-                currentItems.splice(index, 0); // 使用splice(index, 1)删除
                 currentItems.splice(index, 1);
                 renderItemList();
             });
@@ -325,12 +324,12 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const isCompleted = order.status === "Completed";
     
     if (!isHistory) {
-        // Admin: 修改状态 (Completed现在可以改回)
+        // Admin: 修改状态 
         if (!isSalesmanPage) {
             const statusSelect = document.createElement("select");
             statusSelect.title = "Change Order Status"; 
             
-            // 订单所有可能的状态
+            // 订单所有可能的状态 (Completed现在可以改回)
             const statusOptions = ["Pending", "Ordered", "Completed", "Pending Payment", "Follow Up"]; 
             
             statusOptions.forEach(s => {
@@ -427,7 +426,7 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     return div;
 }
 
-// 🚀 NEW: 筛选和渲染函数
+// 筛选和渲染函数
 function filterAndRenderOrders(allData, ordersContainer, isSalesman) {
     if (!allData || !ordersContainer) return;
 
@@ -435,118 +434,4 @@ function filterAndRenderOrders(allData, ordersContainer, isSalesman) {
     ordersContainer.innerHTML = "";
     
     // 1. 根据状态分组订单 (只处理未删除的订单)
-    const grouped = {
-        "Pending": [],
-        "Ordered": [],
-        "Follow Up": [], 
-        "Pending Payment": [],
-        "Completed": []
-    };
-
-    Object.entries(allData).forEach(([key, order]) => {
-        if (order.deleted) return;
-
-        // 🚀 NEW: 搜索逻辑
-        const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
-        if (searchTerm && !searchString.includes(searchTerm)) {
-            return; // 不符合搜索条件，跳过
-        }
-
-        const status = order.status || "Pending";
-        if (grouped[status]) { 
-            grouped[status].push({ key, order });
-        } else {
-             grouped["Pending"].push({ key, order });
-        }
-    });
-
-    // 2. 渲染每个组
-    let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"];
-
-    statusOrder.forEach(status => {
-        if (grouped[status].length > 0) {
-            
-            // 🚀 NEW: 创建可折叠的头部
-            const groupWrapper = document.createElement("div");
-            groupWrapper.className = `status-group-wrapper status-${status.replace(/\s+/g, '')}`;
-            
-            const groupHeader = document.createElement("h3");
-            groupHeader.textContent = `${status} (${grouped[status].length})`;
-            groupHeader.className = 'status-group-header';
-            
-            const cardsContainer = document.createElement("div");
-            cardsContainer.className = 'cards-list-inner'; 
-            
-            // 检查并设置折叠状态
-            if (collapsedGroups[status]) {
-                groupHeader.classList.add('collapsed');
-                cardsContainer.style.display = 'none';
-            }
-
-            // 头部点击事件：切换折叠状态
-            groupHeader.addEventListener('click', () => {
-                const isCollapsed = groupHeader.classList.toggle('collapsed');
-                cardsContainer.style.display = isCollapsed ? 'none' : 'flex';
-                collapsedGroups[status] = isCollapsed; // 存储当前状态
-            });
-            
-            groupWrapper.appendChild(groupHeader);
-            
-            // 按时间戳降序排列 (最新订单在前)
-            grouped[status].sort((a, b) => b.order.timestamp - a.order.timestamp);
-
-            grouped[status].forEach(({ key, order }) => {
-              const card = createOrderCard(key, order, isSalesman, false);
-              cardsContainer.appendChild(card);
-            });
-            
-            groupWrapper.appendChild(cardsContainer);
-            ordersContainer.appendChild(groupWrapper);
-        }
-    });
-}
-
-// --- Firebase 监听器 ---
-if (ordersContainer || historyContainer) {
-    let allOrdersData = null; // 存储完整数据
-
-    onValue(ref(db, "orders"), snapshot => {
-      allOrdersData = snapshot.val();
-      
-      // 🔔 警报声逻辑 (使用完整数据)
-      if (!isSalesman && allOrdersData && audio) {
-          const currentOrderCount = Object.keys(allOrdersData).filter(key => !allOrdersData[key].deleted).length;
-          
-          if (lastOrderCount > 0 && currentOrderCount > lastOrderCount) {
-              audio.play().catch(e => console.log("Audio play failed (user needs to interact first):", e)); 
-          }
-          lastOrderCount = currentOrderCount;
-      }
-      
-      if (ordersContainer) {
-          // 渲染活动订单 (包含筛选和分组)
-          filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
-      }
-      
-      if (historyContainer) {
-          // 渲染历史订单 (不包含筛选)
-          historyContainer.innerHTML = "";
-          if (allOrdersData) {
-              Object.entries(allOrdersData).forEach(([key, order]) => {
-                  if (order.deleted) {
-                      const card = createOrderCard(key, order, isSalesman, true);
-                      historyContainer.appendChild(card);
-                  }
-              });
-          }
-      }
-    });
-
-    // 🚀 NEW: 搜索输入事件监听器
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            // 每次输入都重新筛选和渲染，使用已存储的完整数据
-            filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman);
-        });
-    }
-}
+    const

@@ -1,21 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="/favicon.png"> 
-  <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Order Management</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Admin Dashboard</h1>
 
-  <h2>Orders by Status</h2>
-  <div id="orders-container" class="card-container"></div>
+    <h1>👑 Admin Order Management</h1>
 
-  <h2>Deleted Orders (History)</h2>
-  <div id="history-container" class="card-container"></div>
+    <div id="filter-controls">
+        <label for="orderSearch">🔍 Filter/Search Orders:</label>
+        <input type="text" id="orderSearch" placeholder="Search by Company, PO #, or Contact...">
+    </div>
 
-  <script type="module" src="/scripts.js"></script>
+    <hr>
+
+    <h1>📊 Active Orders</h1>
+    <div id="orders-container" class="card-container">
+        </div>
+    
+    <hr>
+    
+    <h1>🗑️ Order History (Deleted)</h1>
+    <div id="history-container" class="card-container">
+        </div>
+
+    <script type="module" src="scripts.js"></script>
 </body>
 </html>
