@@ -30,7 +30,8 @@ h1, h2, h3 {
     margin-bottom: 10px;
     font-weight: 500;
 }
-.order-form input {
+/* 确保所有输入和 textarea 样式一致 */
+.order-form input, .order-form textarea {
     flex-grow: 1;
     margin-left: 10px;
     padding: 7px 10px;
@@ -38,6 +39,20 @@ h1, h2, h3 {
     border: 1px solid #ccc;
     font-size: 14px;
 }
+
+/* 独立样式用于 Salesman Comment textarea */
+.order-form textarea {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 5px;
+    resize: vertical;
+    min-height: 60px;
+}
+.order-form textarea#salesmanComment {
+    /* 确保其在表单中单独占据空间 */
+    margin-bottom: 20px;
+}
+
 
 .order-form button {
   padding: 8px 15px;
@@ -221,22 +236,18 @@ h1, h2, h3 {
     display: inline-block;
 }
 
-/* 评论样式 */
-.comment-container {
+/* 评论显示和输入容器 */
+.comments-display-container {
     margin-top: 10px;
     padding-top: 5px;
     border-top: 1px solid #eee;
     display: flex;
     flex-direction: column;
-}
-.comment-container span {
-    font-size: 0.9em;
-    color: #444;
-    margin-bottom: 5px;
+    gap: 5px;
 }
 
-/* 关键新增: 高亮实际的备注文本内容 */
-.comment-content-highlight {
+/* Admin Comment Highlight (仅 Admin Comment 内容高亮) */
+.admin-comment-text .comment-content-highlight {
     display: inline-block; 
     background-color: #FFF2E6; /* 基于 FF9012 的超浅背景 */
     color: #434243; /* 备注文本使用深色，确保可读性 */
@@ -245,6 +256,23 @@ h1, h2, h3 {
     border-radius: 3px;
     font-weight: 600; 
     white-space: pre-wrap;
+}
+
+/* Salesman Comment (普通显示) */
+.salesman-comment-text span {
+    font-size: 0.9em;
+    color: #555;
+    margin-left: 5px;
+    white-space: pre-wrap;
+}
+
+/* Admin Comment Input Area (仅 Admin Page 可见) */
+.comment-input-container {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
 }
 
 .comment-input {
@@ -257,14 +285,14 @@ h1, h2, h3 {
     border-radius: 4px;
     resize: vertical;
 }
-.save-comment-btn {
-    background-color: #FF9012; /* 替换为新的主色 */
+.save-admin-comment-btn {
+    background-color: #FF9012; 
     color: #FFFFFF;
     align-self: flex-end;
     margin-top: 0;
-    max-width: 120px;
+    max-width: 150px;
 }
-.save-comment-btn:hover:not([disabled]) {
+.save-admin-comment-btn:hover:not([disabled]) {
     background-color: #e68210;
 }
 
@@ -361,6 +389,11 @@ h1, h2, h3 {
 .card.status-PendingPayment {
   background-color: #f8d7da; /* 红色系保留，表示警告/需关注 */
   border-left: 5px solid #dc3545; /* 红色边框 */
+}
+/* 新增 Follow Up 状态样式 */
+.card.status-FollowUp {
+  background-color: #FFFBE6; /* 浅米黄色 */
+  border-left: 5px solid #FFC107; /* 金色/黄色，表示需要跟进 */
 }
 
 .no-items {

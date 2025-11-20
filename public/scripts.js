@@ -60,9 +60,13 @@ if (isSalesman) {
     
     // 重置表单和 UI
     const resetForm = () => {
-        form.customer.value = "";
+        // 🚀 更新字段名称
+        form.company.value = "";
+        form.attn.value = "";
+        form.hp.value = "";
         form.poNumber.value = "";
         form.delivery.value = "";
+        form.salesmanComment.value = ""; 
         currentItems = [];
         currentEditKey = null;
         renderItemList();
@@ -136,7 +140,7 @@ if (isSalesman) {
         const itemDesc = document.getElementById("itemDesc").value;
         const units = document.getElementById("units").value;
         const price = document.getElementById("price").value;
-        
+
         // 允许 itemDesc 为空，但 units 和 price 必须大于 0
         if (units <= 0 || price <= 0) {
             alert("Please enter valid item units and price (must be greater than 0).");
@@ -164,25 +168,33 @@ if (isSalesman) {
             return;
         }
         
-        // 🚀 关键修改: 移除对 itemDesc 的非空检查，只检查 units 和 price
+        // 只检查 units 和 price
         const invalidItem = currentItems.find(item => item.units <= 0 || parseFloat(item.price.replace('RM ', '')) <= 0);
         if (invalidItem) {
             alert("Please ensure all item units and prices are valid and non-zero.");
             return;
         }
+        
+        // 获取 Salesman Comment
+        const newSalesmanComment = form.salesmanComment.value.trim();
 
-        // 获取正在编辑的订单的现有数据（用于保留状态/时间戳）
+        // 获取正在编辑的订单的现有数据（用于保留状态/时间戳/AdminComment）
         const existingCard = document.querySelector(`.card[data-key="${currentEditKey}"]`);
         
         const data = {
-            customer: form.customer.value,
+            // 🚀 核心更新: 字段名称
+            company: form.company.value,
+            attn: form.attn.value,
+            hp: form.hp.value,
             poNumber: form.poNumber.value,
             delivery: form.delivery.value,
             orderItems: currentItems, 
             status: currentEditKey ? (existingCard?.dataset?.status || "Pending") : "Pending", 
             deleted: currentEditKey ? (existingCard?.dataset?.deleted === 'true') : false, 
             timestamp: currentEditKey ? (parseInt(existingCard?.dataset?.timestamp) || Date.now()) : Date.now(), 
-            comment: currentEditKey ? (existingCard?.dataset?.comment || "") : "" 
+            
+            salesmanComment: currentEditKey ? newSalesmanComment : newSalesmanComment, 
+            adminComment: currentEditKey ? (existingCard?.dataset?.admincomment || "") : "" 
         };
         
         if (currentEditKey) {
@@ -206,22 +218,24 @@ if (isSalesman) {
 
 // --- Helper: 创建订单卡片 ---
 function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
+    const hasAdminCommentClass = order.adminComment && order.adminComment.trim() !== "" ? 'has-comment' : '';
     const div = document.createElement("div");
-    // 如果有评论，添加 'has-comment' class (用于整个卡片边框高亮)
-    const hasCommentClass = order.comment && order.comment.trim() !== "" ? 'has-comment' : '';
-    div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')} ${hasCommentClass}`;
+    div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')} ${hasAdminCommentClass}`;
     
     div.setAttribute('data-key', key);
     div.setAttribute('data-status', order.status);
     div.setAttribute('data-timestamp', order.timestamp);
     div.setAttribute('data-deleted', order.deleted);
-    div.setAttribute('data-comment', order.comment || '');
+    div.setAttribute('data-admincomment', order.adminComment || ''); 
+    div.setAttribute('data-salesmancomment', order.salesmanComment || ''); 
 
     // 1. 基本信息
     const infoContainer = document.createElement('div');
     infoContainer.className = 'order-info';
     infoContainer.innerHTML = `
-        <span><b>Customer:</b> ${order.customer || 'N/A'}</span>
+        <span><b>Company:</b> ${order.company || 'N/A'}</span>
+        <span><b>ATTN:</b> ${order.attn || 'N/A'}</span>
+        <span><b>H/P:</b> ${order.hp || 'N/A'}</span>
         <span><b>PO Number:</b> ${order.poNumber || 'N/A'}</span>
         <span><b>Delivery:</b> ${order.delivery || 'N/A'}</span>
     `;
@@ -236,7 +250,6 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
         order.orderItems.forEach(item => {
             const itemSpan = document.createElement('span');
             itemSpan.className = 'item-detail';
-            // 如果描述为空，显示 N/A
             const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
             itemSpan.innerHTML = `${itemDescDisplay} (${item.units} x ${item.price})`;
             itemsListContainer.appendChild(itemSpan);
@@ -252,43 +265,58 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     timeSpan.textContent = `Submitted: ${new Date(order.timestamp).toLocaleString()}`;
     div.appendChild(timeSpan);
     
-    // 4. 评论显示与输入
-    const commentContainer = document.createElement('div');
-    commentContainer.className = 'comment-container';
+    // 4. 评论显示区域 (双字段显示)
+    const commentsDisplayContainer = document.createElement('div');
+    commentsDisplayContainer.className = 'comments-display-container';
     
-    // 检查是否有评论
-    const hasComment = order.comment && order.comment.trim() !== "";
-    
-    // 包装评论内容，使其可以被 CSS 高亮
-    const commentContentHTML = hasComment 
-        ? `<span class="comment-content-highlight">${order.comment}</span>` 
-        : 'N/A';
-        
-    const commentText = document.createElement('span');
-    commentText.innerHTML = `<b>Comment:</b> ${commentContentHTML}`; 
-    commentContainer.appendChild(commentText);
+    const salesmanComment = order.salesmanComment && order.salesmanComment.trim() !== "";
+    const adminComment = order.adminComment && order.adminComment.trim() !== "";
 
-    // 🚀 修改: Salesman 和 Admin 都可以添加/编辑评论，只要不是历史订单
-    if (!isHistory) { 
-        // Admin/Salesman: Add/Edit Comment area
+    // A. Salesman Comment (普通显示)
+    const scText = document.createElement('span');
+    scText.className = 'salesman-comment-text';
+    scText.innerHTML = `<b>Salesman Comment:</b> <span>${order.salesmanComment || 'N/A'}</span>`; 
+    commentsDisplayContainer.appendChild(scText);
+
+    // B. Admin Comment (高亮)
+    const acText = document.createElement('span');
+    acText.className = 'admin-comment-text';
+    const acContentHTML = adminComment
+        ? `<span class="comment-content-highlight">${order.adminComment}</span>` 
+        : 'N/A';
+    acText.innerHTML = `<b>Admin Remark:</b> ${acContentHTML}`; 
+    commentsDisplayContainer.appendChild(acText);
+
+    div.appendChild(commentsDisplayContainer);
+    
+    // 5. Admin Comment 输入区域
+    const commentInputContainer = document.createElement('div');
+    commentInputContainer.className = 'comment-input-container';
+
+    // 只有 Admin Page 且非历史订单才显示 Admin 备注输入框
+    if (!isSalesmanPage && !isHistory) { 
         const commentInput = document.createElement('textarea');
-        commentInput.placeholder = "Add or edit comment...";
-        commentInput.value = order.comment || '';
+        commentInput.placeholder = "Add or edit Admin Remark...";
+        commentInput.value = order.adminComment || '';
         commentInput.className = 'comment-input';
         
         const saveCommentBtn = document.createElement('button');
-        saveCommentBtn.textContent = "Save Comment";
-        saveCommentBtn.className = 'save-comment-btn';
+        saveCommentBtn.textContent = "Save Admin Remark";
+        saveCommentBtn.className = 'save-admin-comment-btn';
         saveCommentBtn.addEventListener('click', () => {
-            set(ref(db, `orders/${key}/comment`), commentInput.value.trim());
+            // 保存到 adminComment 字段
+            set(ref(db, `orders/${key}/adminComment`), commentInput.value.trim());
         });
 
-        commentContainer.appendChild(commentInput);
-        commentContainer.appendChild(saveCommentBtn);
+        commentInputContainer.appendChild(commentInput);
+        commentInputContainer.appendChild(saveCommentBtn);
     }
-    div.appendChild(commentContainer);
+
+    if (commentInputContainer.children.length > 0) {
+         div.appendChild(commentInputContainer);
+    }
     
-    // 5. 操作区域
+    // 6. 操作区域
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'actions-container'; 
     
@@ -300,7 +328,8 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
             const statusSelect = document.createElement("select");
             statusSelect.title = "Change Order Status"; 
             
-            let statusOptions = ["Ordered", "Completed", "Pending Payment"]; 
+            // 🚀 更新状态选项，新增 Follow Up
+            let statusOptions = ["Ordered", "Completed", "Pending Payment", "Follow Up"]; 
             
             if (isCompleted) {
                 statusOptions = statusOptions.filter(s => s === "Completed");
@@ -335,9 +364,13 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
               if (isCompleted) return; 
               
               currentEditKey = key; 
-              form.customer.value = order.customer;
+              // 🚀 载入新的字段
+              form.company.value = order.company;
+              form.attn.value = order.attn;
+              form.hp.value = order.hp;
               form.poNumber.value = order.poNumber;
               form.delivery.value = order.delivery;
+              form.salesmanComment.value = order.salesmanComment || '';
               
               // Deep copy the array to avoid reference issues
               currentItems = JSON.parse(JSON.stringify(order.orderItems || [])); 
@@ -423,8 +456,9 @@ if (ordersContainer || historyContainer) {
       const grouped = {
         "Pending": [],
         "Ordered": [],
-        "Completed": [],
-        "Pending Payment": []
+        "Pending Payment": [],
+        "Follow Up": [], // 🚀 新增状态
+        "Completed": []
       };
 
       Object.entries(data).forEach(([key, order]) => {
@@ -446,8 +480,8 @@ if (ordersContainer || historyContainer) {
         }
       });
 
-      // 订单状态排序 - Pending -> Ordered -> Pending Payment -> Completed
-      let statusOrder = ["Pending", "Ordered", "Pending Payment", "Completed"];
+      // 订单状态排序 - Pending -> Ordered -> Follow Up -> Pending Payment -> Completed
+      let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"]; // 🚀 更新排序
 
       statusOrder.forEach(status => {
         if (grouped[status].length > 0 && ordersContainer) {

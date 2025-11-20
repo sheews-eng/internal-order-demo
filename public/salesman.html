@@ -1,41 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <link rel="icon" type="image/png" href="/favicon.png"> 
-  <title>Salesman Page</title>
-  <link rel="stylesheet" href="/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesman Order Submission</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        .order-form textarea#salesmanComment {
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Salesman Order Form</h1>
 
-  <form id="order-form" class="order-form">
-    <label>Customer: <input type="text" name="customer" required></label>
-    <label>PO Number: <input type="text" name="poNumber" required></label>
-    <label>Delivery: <input type="text" name="delivery" required></label>
+    <h1>📝 Salesman Order Form</h1>
+
+    <form id="order-form" class="order-form">
+        
+        <h2>Order Details</h2>
+        
+        <label>Company Name: 
+            <input type="text" name="company" id="company" required>
+        </label>
+        
+        <label>ATTN: 
+            <input type="text" name="attn" id="attn" required>
+        </label>
+        
+        <label>H/P: 
+            <input type="text" name="hp" id="hp" required>
+        </label>
+        
+        <label>P/O Number: 
+            <input type="text" name="poNumber" id="poNumber" required>
+        </label>
+        
+        <label>Delivery Location: 
+            <input type="text" name="delivery" id="delivery" required>
+        </label>
+        
+        <label>Salesman Comment:
+            <textarea name="salesmanComment" id="salesmanComment" placeholder="Add your specific notes here (optional)..."></textarea>
+        </label>
+
+        
+        <h2>Add Item</h2>
+
+        <div class="item-input-group">
+            <label>Item Description:
+                <input type="text" id="itemDesc" placeholder="e.g. 50W LED Light">
+            </label>
+            <label>Units:
+                <input type="number" id="units" value="1" min="1">
+            </label>
+            <label>Price (RM):
+                <input type="number" id="price" value="0.00" step="0.01" min="0">
+            </label>
+            <button type="button" id="addItemBtn">Add Item</button>
+        </div>
+
+        <div id="item-list-container" class="item-list-preview">
+            </div>
+        
+        <button type="submit" class="submit-order-btn">Submit Order</button>
+    </form>
+
+    <hr>
+
+    <h1>📊 Active Orders</h1>
+    <div id="orders-container" class="card-container">
+        </div>
     
-    <h3>Add Items</h3>
-    <div class="item-input-group">
-      <label>Item + Description: <input type="text" id="itemDesc" required></label>
-      <label>Units: <input type="number" id="units" value="1" required></label>
-      <label>Price: RM <input type="number" id="price" step="0.01" value="0.00" required></label>
-      <button type="button" id="addItemBtn">Add Item</button>
-    </div>
+    <hr>
     
-    <h3>Items in Order</h3>
-    <div id="item-list-container" class="card-container item-list-preview">
-      </div>
+    <h1>🗑️ Order History (Deleted)</h1>
+    <div id="history-container" class="card-container">
+        </div>
 
-    <button type="submit" class="submit-order-btn">Submit Order</button>
-  </form>
-
-  <h2>Orders</h2>
-  <div id="orders-container" class="card-container"></div>
-
-  <h2>Deleted Orders (History)</h2>
-  <div id="history-container" class="card-container"></div>
-
-  <script type="module" src="/scripts.js"></script>
+    <script type="module" src="scripts.js"></script>
 </body>
 </html>
