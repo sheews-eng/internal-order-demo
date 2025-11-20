@@ -98,7 +98,7 @@ h1, h2, h3 {
 
 /* 取消编辑按钮 */
 .order-form .cancel-edit-btn {
-    background-color: #95a5a6; /* Silver/Gray for Cancel */
+    background-color: #95a5a6; 
     color: white;
     margin-right: 10px;
     width: 30%;
@@ -109,7 +109,7 @@ h1, h2, h3 {
 
 /* 更新订单按钮 */
 .order-form .submit-order-btn.update-mode {
-    background-color: #2ecc71; /* Green for Update */
+    background-color: #2ecc71; 
     width: calc(70% - 10px); 
     display: inline-block;
 }
@@ -118,9 +118,8 @@ h1, h2, h3 {
 }
 
 
-/* --- Salesman Item List Editing Styles (新增/核心修改) --- */
+/* --- Salesman Item List Editing Styles --- */
 .item-list-preview {
-    /* 保持原来的 flex 容器设置 */
     gap: 8px;
     justify-content: flex-start;
 }
@@ -134,7 +133,6 @@ h1, h2, h3 {
     max-width: 450px;
 }
 
-/* 使卡片内的内容从 flex 变为 block，以便于管理多行输入 */
 .item-list-preview .item-preview.editable-item {
     display: block; 
     padding: 10px;
@@ -149,13 +147,13 @@ h1, h2, h3 {
 
 .item-list-preview .item-preview label {
     display: block;
-    flex: 1; /* 分布空间 */
+    flex: 1; 
     font-size: 0.9em;
     font-weight: normal;
     margin-bottom: 0;
 }
 .item-list-preview .item-preview label:first-child {
-    flex: 2; /* 让描述字段更宽 */
+    flex: 2; 
 }
 
 .item-list-preview .item-preview input {
@@ -207,6 +205,12 @@ h1, h2, h3 {
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
+/* 🚀 新增: Admin Remark Highlight Styles */
+.card.has-comment {
+    border: 2px solid #f39c12; /* 橙色边框 */
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.2);
+}
+
 .card span {
   margin: 1px 0;
   display: block;
@@ -248,6 +252,11 @@ h1, h2, h3 {
 }
 .save-comment-btn:hover:not([disabled]) {
     background-color: #e67e22;
+}
+/* 🚀 新增: 高亮 Comment 标题 */
+.comment-highlight {
+    color: #e67e22; /* 深橙色文本 */
+    font-weight: bold;
 }
 
 

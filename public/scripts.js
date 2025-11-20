@@ -69,7 +69,7 @@ if (isSalesman) {
         updateFormUI(false);
     };
 
-    // 🚀 核心修改: renderItemList 函数 - 使商品列表项目可编辑
+    // 核心修改: renderItemList 函数 - 使商品列表项目可编辑
     renderItemList = function() {
         itemListContainer.innerHTML = "";
         if (currentItems.length === 0) {
@@ -120,8 +120,6 @@ if (isSalesman) {
                     } else if (field === 'itemDesc') {
                         currentItems[idx].itemDesc = value;
                     }
-                    // 不需要重新渲染整个列表，只需更新 currentItems
-                    // console.log('Item updated:', currentItems[idx]);
                 });
             });
 
@@ -133,8 +131,7 @@ if (isSalesman) {
             itemListContainer.appendChild(itemDiv);
         });
     }; 
-    // -------------------------------------------------------------
-
+    
     addItemBtn.addEventListener("click", () => {
         const itemDesc = document.getElementById("itemDesc").value;
         const units = document.getElementById("units").value;
@@ -173,7 +170,6 @@ if (isSalesman) {
             return;
         }
 
-
         // 获取正在编辑的订单的现有数据（用于保留状态/时间戳）
         const existingCard = document.querySelector(`.card[data-key="${currentEditKey}"]`);
         
@@ -207,10 +203,12 @@ if (isSalesman) {
     renderItemList(); 
 }
 
-// --- Helper: 创建订单卡片 (逻辑不变) ---
+// --- Helper: 创建订单卡片 ---
 function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const div = document.createElement("div");
-    div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')}`;
+    // 🚀 新增: 如果有评论，添加 'has-comment' class
+    const hasCommentClass = order.comment && order.comment.trim() !== "" ? 'has-comment' : '';
+    div.className = `card ${isHistory ? 'history' : ''} status-${order.status.replace(/\s+/g, '')} ${hasCommentClass}`;
     
     div.setAttribute('data-key', key);
     div.setAttribute('data-status', order.status);
@@ -255,8 +253,10 @@ function createOrderCard(key, order, isSalesmanPage, isHistory = false) {
     const commentContainer = document.createElement('div');
     commentContainer.className = 'comment-container';
     
+    // 🚀 新增: 如果有评论，高亮 Comment 标题
+    const commentClass = order.comment && order.comment.trim() !== "" ? 'comment-highlight' : '';
     const commentText = document.createElement('span');
-    commentText.innerHTML = `<b>Comment:</b> ${order.comment || 'N/A'}`;
+    commentText.innerHTML = `<b class="${commentClass}">Comment:</b> ${order.comment || 'N/A'}`;
     commentContainer.appendChild(commentText);
 
     if (!isSalesmanPage && !isHistory) {
@@ -426,13 +426,18 @@ if (ordersContainer || historyContainer) {
           return;
         }
         
-        if (grouped[order.status]) { 
-            grouped[order.status].push({ key, order });
+        // 确保所有订单都有一个状态，防止崩溃
+        const status = order.status || "Pending";
+        if (grouped[status]) { 
+            grouped[status].push({ key, order });
+        } else {
+             // 如果 Firebase 中有未定义的奇怪状态，归类到 Pending
+             grouped["Pending"].push({ key, order });
         }
       });
 
-      // 订单状态排序
-      let statusOrder = ["Pending", "Ordered", "Completed", "Pending Payment"];
+      // 🚀 核心修改: 订单状态排序 - Pending -> Ordered -> Pending Payment -> Completed
+      let statusOrder = ["Pending", "Ordered", "Pending Payment", "Completed"];
 
       statusOrder.forEach(status => {
         if (grouped[status].length > 0 && ordersContainer) {
@@ -441,6 +446,9 @@ if (ordersContainer || historyContainer) {
             groupHeader.className = 'status-group-header';
             ordersContainer.appendChild(groupHeader);
             
+            // 按时间戳降序排列 (最新订单在前)
+            grouped[status].sort((a, b) => b.order.timestamp - a.order.timestamp);
+
             grouped[status].forEach(({ key, order }) => {
               const card = createOrderCard(key, order, isSalesman, false);
               ordersContainer.appendChild(card);
