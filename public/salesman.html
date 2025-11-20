@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salesman - New Order</title>
+    
+    <!-- 确保您的 Favicon 存在 -->
+    <link rel="icon" type="image/png" href="/favicon.png"> 
+
+    <!-- 链接您的 CSS 文件 -->
     <link rel="stylesheet" href="styles.css"> 
     
+    <!-- 导入 Firebase JS SDK (必须) -->
     <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js"></script>
 </head>
@@ -13,7 +19,9 @@
 
     <h1>Submit New Order</h1>
 
+    <!-- 订单提交表单 -->
     <form id="order-form" class="order-form">
+        <!-- 基本信息 -->
         <label>Company Name: 
             <input type="text" name="company" id="company" required>
         </label>
@@ -30,16 +38,19 @@
             <input type="text" name="delivery" id="delivery" required>
         </label>
         
+        <!-- 🚨 Urgent Order Checkbox -->
         <label style="display: block; margin-bottom: 20px;">
             <input type="checkbox" name="isUrgent" id="isUrgent" style="width: auto; margin-right: 10px;">
             <strong style="color: #e74c3c;">Mark as URGENT ORDER 🚨</strong>
         </label>
+
         <label>Salesman Comment:
             <textarea name="salesmanComment" id="salesmanComment" placeholder="Add your specific notes here (optional)..."></textarea>
         </label>
 
         <h2>Items to Order</h2>
 
+        <!-- 多商品输入区域 -->
         <div class="item-input-group">
             <label>Item Description: <input type="text" id="itemDesc"></label>
             <label>Units: <input type="number" id="units" value="1" min="1"></label>
@@ -47,30 +58,39 @@
             <button type="button" id="addItemBtn">Add Item</button>
         </div>
 
+        <!-- 商品列表预览和编辑区域 -->
         <h3>Current Items List</h3>
         <div id="item-list-container" class="item-list-preview">
-            </div>
+            <!-- Items will be rendered here by scripts.js -->
+        </div>
 
+        <!-- 提交按钮 -->
         <button type="submit" class="submit-order-btn">Submit Order</button>
     </form>
 
     <hr>
 
     <h1>Active Orders</h1>
+    <!-- 搜索/筛选区域 -->
     <div id="filter-controls">
         <label for="orderSearch">Search (Company, PO #, ATTN):</label>
         <input type="text" id="orderSearch" placeholder="Start typing to filter orders...">
     </div>
 
+    <!-- 订单列表容器 (表格模式) -->
     <div id="orders-container">
-        </div>
+        <!-- Orders will be rendered as tables here by scripts.js -->
+    </div>
     
     <hr>
 
     <h1>Order History (Deleted)</h1>
+    <!-- 订单历史容器 (表格模式) -->
     <div id="history-container">
-        </div>
+        <!-- Deleted Orders will be rendered as tables here by scripts.js -->
+    </div>
 
+    <!-- 链接您的 JavaScript 文件 (必须在 body 底部) -->
     <script type="module" src="scripts.js"></script>
 </body>
 </html>
