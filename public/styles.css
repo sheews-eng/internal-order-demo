@@ -55,7 +55,7 @@ hr {
 
 .order-form textarea {
     min-height: 100px;
-    grid-column: span full; /* Full width for comments */
+    grid-column: span full;
 }
 
 .order-form input:focus,
@@ -64,28 +64,26 @@ hr {
     outline: none;
 }
 
+/* 优化部分: Add Item 区域布局和视觉分离 (Grid) */
 .item-input-group {
-    grid-column: 1 / -1; /* Take full width */
+    grid-column: 1 / -1;
     background: #ecf0f1;
     padding: 15px;
     border-radius: 6px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: flex-end;
+    display: grid; /* 保持 Grid 布局，电脑上更清晰 */
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 15px;
+    align-items: center;
 }
 
 .item-input-group label {
-    flex: 1 1 200px;
-    margin: 0;
+    margin-bottom: 0;
 }
 .item-input-group input {
-    margin-top: 5px;
+    margin-top: 0;
 }
 
 #addItemBtn {
-    flex-grow: 0;
-    flex-shrink: 0;
     padding: 10px 15px;
     background-color: #2ecc71;
     color: white;
@@ -93,6 +91,8 @@ hr {
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s;
+    height: 40px;
+    margin-top: 10px;
 }
 
 #addItemBtn:hover {
@@ -116,7 +116,6 @@ hr {
     background-color: #2980b9;
 }
 
-/* Edit Mode Button Styling */
 .submit-order-btn.update-mode {
     background-color: #f39c12;
 }
@@ -164,6 +163,7 @@ hr {
     border: 1px solid #ddd;
     border-radius: 4px;
     background: #f9f9f9;
+    border-left: 5px solid #3498db; 
 }
 
 .item-detail-row {
@@ -258,18 +258,16 @@ hr {
     font-weight: 600;
 }
 
-/* Main Row Styling */
 .orders-table tr {
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .orders-table tr:hover {
-    background-color: #f0f8ff; /* Light hover for all rows */
+    background-color: #f0f8ff;
 }
 
-/* 🌟 颜色增强部分：更高的对比度 🌟 */
-/* Pending: 柔和红+深红色文字 */
+/* 颜色增强部分：更高的对比度 */
 .status-Pending { 
     background-color: #ffebee; 
     color: #c62828; 
@@ -278,7 +276,6 @@ hr {
     background-color: #fce4e4; 
 }
 
-/* Ordered: 柔和绿+深绿色文字 */
 .status-Ordered { 
     background-color: #e8f5e9; 
     color: #2e7d32; 
@@ -287,7 +284,6 @@ hr {
     background-color: #dce7dc; 
 }
 
-/* Completed: 柔和灰+深灰色文字 */
 .status-Completed { 
     background-color: #f5f5f5; 
     color: #757575; 
@@ -297,7 +293,6 @@ hr {
     background-color: #e0e0e0; 
 }
 
-/* PendingPayment: 柔和黄+深黄色文字 */
 .status-PendingPayment { 
     background-color: #fff8e1; 
     color: #f9a825; 
@@ -306,7 +301,6 @@ hr {
     background-color: #fcf4d3; 
 }
 
-/* FollowUp: 柔和紫+深紫色文字 */
 .status-FollowUp { 
     background-color: #f3e5f5; 
     color: #8e24aa; 
@@ -315,13 +309,10 @@ hr {
     background-color: #ebdaee; 
 }
 
-
-/* Comment Indication */
 .has-comment {
-    border-left: 5px solid #f39c12; /* Orange stripe for comment */
+    border-left: 5px solid #f39c12;
 }
 
-/* Urgent Flag */
 .status-urgent {
     animation: urgent-pulse 1.5s infinite;
     font-weight: bold;
@@ -391,7 +382,6 @@ hr {
     color: #2980b9;
 }
 
-/* Admin Controls in Details */
 .admin-comment-detail-input {
     width: 100%;
     min-height: 80px;
@@ -454,53 +444,63 @@ hr {
         padding: 10px;
     }
     
-    /* 表单在手机上垂直堆叠 */
     .order-form {
         grid-template-columns: 1fr;
         padding: 15px;
     }
 
+    /* 移动端 Add Item 恢复垂直堆叠 */
     .item-input-group {
+        display: flex;
         flex-direction: column;
         align-items: stretch;
     }
 
+    .item-input-group label {
+        margin-bottom: 10px;
+    }
+    
     .details-content {
         flex-direction: column;
         gap: 20px;
     }
 
     /* ---------------------------------------------------- */
-    /* 🌟 手机表格优化：水平滚动 (Horizontal Scroll) 🌟 */
+    /* 🌟 手机表格优化：隐藏次要列 🌟 */
     /* ---------------------------------------------------- */
-    /* 1. 为订单容器添加滚动条 */
     #orders-container, #history-container {
-        overflow-x: auto; /* 允许水平滚动 */
-        -webkit-overflow-scrolling: touch; /* 提高 iOS 上的滚动体验 */
+        overflow-x: auto; /* 仅在必要时允许水平滚动 */
+        -webkit-overflow-scrolling: touch; 
     }
     
     .orders-table {
-        /* 强制表格最小宽度，以确保所有列都能显示，即使超出了屏幕 */
-        min-width: 700px; /* 设定一个确保所有列能显示的最小宽度 */
-        width: 100%; /* 保持 100% 宽度，但由于 min-width 可能会溢出 */
-        display: table; /* 恢复为标准表格显示 */
-        font-size: 0.9em; /* 字体略小，以容纳更多内容 */
-    }
-
-    /* 恢复正常的表格行和单元格显示 */
-    .orders-table thead, .orders-table tbody, .orders-table th, .orders-table td, .orders-table tr {
-        display: table-row-group;
-        display: table-row;
-        display: table-cell;
+        width: 100%; 
+        display: table; 
+        font-size: 0.9em; 
     }
     
-    .orders-table thead tr {
-        position: initial; /* 取消之前的 position 隐藏 */
+    /* 隐藏不常用的列，让 Date, Company, Status 适应屏幕 */
+    /* PO # (第 3 列) */
+    .orders-table td:nth-of-type(3), 
+    .orders-table th:nth-of-type(3) {
+        display: none;
     }
-
-    /* 详情行恢复正常显示 */
+    /* ATTN (第 4 列) */
+    .orders-table td:nth-of-type(4), 
+    .orders-table th:nth-of-type(4) {
+        display: none;
+    }
+    /* Delivery Location (第 5 列) */
+    .orders-table td:nth-of-type(5), 
+    .orders-table th:nth-of-type(5) {
+        display: none;
+    }
+    
+    /* 详情行 (Details Row) 必须是全宽显示 */
     .details-row td {
-        min-width: 700px; /* 确保详情内容也匹配表格宽度 */
+        display: table-cell; 
+        width: 100vw; 
+        box-sizing: border-box; 
     }
     
     /* 详情动作区域在手机上垂直堆叠 */
