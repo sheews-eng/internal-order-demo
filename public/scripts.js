@@ -204,7 +204,7 @@ if (isSalesman) {
             return;
         }
         
-        // 使用可选链 (?.) 和空值合并运算符 (?? "") 安全读取字段值
+        // 🌟 核心修复: 使用可选链 (?.) 和空值合并运算符 (?? "") 确保即使 form.fieldName 为 undefined 也不会报错
         const newSalesmanComment = form.salesmanComment?.value.trim() ?? ""; 
         const isUrgent = form.isUrgent?.checked ?? false; 
 
@@ -220,7 +220,6 @@ if (isSalesman) {
             }
         }
         
-        // 🌟 核心修复: 安全读取所有表单字段
         const data = {
             company: form.company?.value ?? "",
             attn: form.attn?.value ?? "",
@@ -573,7 +572,9 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         if (groupData.length === 0) return;
         
         const table = document.createElement('table');
-        table.className = `orders-table ${isHistoryTable ? 'history-table' : ''}`;
+        // 🌟 更新: 为 Salesman 的 Active Order 表格添加 salesman-table 类
+        const tableClass = (isSalesman && !isHistoryTable) ? 'salesman-table' : ''; 
+        table.className = `orders-table ${isHistoryTable ? 'history-table' : ''} ${tableClass}`;
         table.innerHTML = tableHeaders;
         const tbody = document.createElement('tbody');
         
