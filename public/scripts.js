@@ -113,9 +113,12 @@ function renderDetailsRow(order, isSalesman) {
 
     const statusOptions = ['Pending', 'Ordered', 'Completed', 'PendingPayment', 'FollowUp'];
 
-    // 🌟 修复点: 确保使用 order.items (与提交订单时一致) 并且安全检查 🌟
-    // Item List HTML
-    const itemsHtml = (order.items || []).map(item => {
+    // 🌟 最终修复点: 兼容历史数据 order.orderItems 和新的 order.items 🌟
+    // 先检查 order.items，如果不存在，则检查 order.orderItems
+    const itemsToRender = order.items || order.orderItems || []; 
+
+    // Item List HTML (基于 itemsToRender)
+    const itemsHtml = itemsToRender.map(item => {
         const units = item.units || 0;
         const price = item.price || 0;
         return `<span>${item.itemDesc || 'N/A'} (${units} x RM ${parseFloat(price).toFixed(2)})</span>`;
@@ -350,7 +353,7 @@ if (form) {
             isUrgent: document.getElementById('isUrgent').value === 'true',
             salesmanComment: formData.get('salesmanComment'),
             adminComment: '', 
-            // 🌟 修复点: 确保提交订单时使用的字段是 'items' 🌟
+            // 🌟 提交订单时，统一使用 'items' 字段 🌟
             items: items 
         };
         
@@ -416,9 +419,10 @@ function startEditOrder(id) {
     document.getElementById('isUrgent').value = String(orderToEdit.isUrgent || false);
     document.getElementById('salesmanComment').value = orderToEdit.salesmanComment || '';
 
-    // Load items 
-    items.length = 0; // Clear existing items
-    items.push(...(orderToEdit.items || [])); // 确保使用 orderToEdit.items
+    // 🌟 修复点: 编辑时也兼容两种字段 🌟
+    items.length = 0; 
+    const itemsFromOrder = orderToEdit.items || orderToEdit.orderItems || [];
+    items.push(...itemsFromOrder); 
     renderItemList();
 
     // Update buttons
