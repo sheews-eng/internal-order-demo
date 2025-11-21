@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 // =========================================================
-// 🚨 IMPORTANT: 您的 Firebase 配置 
+// 🚨 IMPORTANT: 您的 Firebase 配置 (已更新)
 // =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -12,7 +12,7 @@ const firebaseConfig = {
   storageBucket: "internal-orders-765dd.firebasestorage.app",
   messagingSenderId: "778145240016",
   appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
-  measurementId: "G-H0FVWM7V1R" 
+  measurementId: "G-H0FVWM7V1R"
 };
 // =========================================================
 
@@ -20,22 +20,20 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const form = document.getElementById("order-form"); 
+const isSalesman = form !== null; 
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
 const searchInput = document.getElementById("orderSearch"); 
 
-const isSalesman = form !== null; 
-
-// Salesman global states/functions
+// Salesman 多商品状态
 let currentItems = []; 
+let renderItemList;   
 let currentEditKey = null; 
-let renderItemList = () => { /* Defined below in isSalesman block */ };   
 
-// 存储当前展开的详情行 Key
-let expandedKey = null;
 // 存储当前折叠状态
 let collapsedGroups = {}; 
-
+// 存储当前展开的详情行 Key
+let expandedKey = null;
 
 // 🔔 Admin 警报声逻辑
 let lastOrderCount = 0;
@@ -63,6 +61,7 @@ function getPriceValue(item) {
 
 // --- Salesman 功能 (多商品/编辑逻辑) ---
 if (isSalesman) {
+    const addItemBtn = document.getElementById("addItemBtn");
     const itemListContainer = document.getElementById("item-list-container");
     const submitBtn = form.querySelector('.submit-order-btn');
     
@@ -87,15 +86,13 @@ if (isSalesman) {
         }
     };
     
-    // ✅ 修复 SyntaxError: 使用 if 检查确保元素存在，再进行赋值
+    // ✅ 修复 TypeError/SyntaxError: 使用 if 检查确保元素存在，再进行赋值
     const resetForm = () => {
         if (form.company) form.company.value = "";
         if (form.attn) form.attn.value = "";
         if (form.hp) form.hp.value = "";
         if (form.poNumber) form.poNumber.value = "";
         if (form.delivery) form.delivery.value = "";
-        
-        // 确保字段存在再设置值 
         if (form.salesmanComment) form.salesmanComment.value = ""; 
         if (form.isUrgent) form.isUrgent.checked = false;
         
@@ -105,7 +102,7 @@ if (isSalesman) {
         updateFormUI(false);
     };
 
-    // 渲染商品列表 (主定义)
+    // 渲染商品列表
     renderItemList = function() {
         itemListContainer.innerHTML = "";
         if (currentItems.length === 0) {
@@ -117,7 +114,6 @@ if (isSalesman) {
             const itemDiv = document.createElement("div");
             itemDiv.className = "card item-preview editable-item";
             
-            // 使用 getPriceValue 安全地获取价格
             const priceValue = getPriceValue(item);
 
             itemDiv.innerHTML = `
@@ -152,7 +148,6 @@ if (isSalesman) {
                     } else if (field === 'price') {
                         value = parseFloat(value) || 0.01;
                         e.target.value = value.toFixed(2);
-                        // 始终将价格保存为 RM 字符串 (保持一致的 Firebase 结构)
                         currentItems[idx].price = `RM ${value.toFixed(2)}`;
                     } else if (field === 'itemDesc') {
                         currentItems[idx].itemDesc = value;
@@ -170,7 +165,6 @@ if (isSalesman) {
     }; 
     
     // 添加商品按钮
-    const addItemBtn = document.getElementById("addItemBtn");
     addItemBtn.addEventListener("click", () => {
         const itemDesc = document.getElementById("itemDesc").value;
         const units = document.getElementById("units").value;
@@ -184,7 +178,7 @@ if (isSalesman) {
         currentItems.push({
             itemDesc: itemDesc,
             units: parseInt(units),
-            price: `RM ${parseFloat(price).toFixed(2)}` // 保存为 RM 字符串
+            price: `RM ${parseFloat(price).toFixed(2)}`
         });
 
         document.getElementById("itemDesc").value = "";
@@ -209,10 +203,10 @@ if (isSalesman) {
             return;
         }
         
-        // 使用可选链 (?.) 确保元素存在，否则使用空字符串/false
-        const newSalesmanComment = form.salesmanComment?.value.trim() || "";
-        const isUrgent = form.isUrgent?.checked || false; 
+        const newSalesmanComment = form.salesmanComment.value.trim();
+        const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
 
+        // 获取现有订单数据，用于更新模式
         let existingOrderData = {};
         if (currentEditKey) {
             const existingRow = document.querySelector(`tr[data-key="${currentEditKey}"]`);
@@ -225,13 +219,11 @@ if (isSalesman) {
         }
         
         const data = {
-            // 对所有表单字段使用可选链
-            company: form.company?.value || "",
-            attn: form.attn?.value || "",
-            hp: form.hp?.value || "",
-            poNumber: form.poNumber?.value || "",
-            delivery: form.delivery?.value || "",
-            
+            company: form.company.value,
+            attn: form.attn.value,
+            hp: form.hp.value,
+            poNumber: form.poNumber.value,
+            delivery: form.delivery.value,
             orderItems: currentItems, 
             status: existingOrderData.status || "Pending", 
             deleted: existingOrderData.deleted || false, 
@@ -256,26 +248,24 @@ if (isSalesman) {
         }
     });
 
-    renderItemList(); // Initial call
+    renderItemList(); 
+    
 }
 
 // --- Helper: 创建详情行 ---
 function createDetailsRow(key, order, isSalesmanPage, isHistory) {
-    
     // 兼容旧的 'items' 字段
     const itemsToRender = order.orderItems || order.items || []; 
     
     const totalAmount = (itemsToRender).reduce((sum, item) => {
-        // 使用 getPriceValue 安全地解析价格
         const price = getPriceValue(item);
         return sum + (price * (item.units || 0));
     }, 0);
     
     const itemsListHTML = (itemsToRender).map(item => {
         const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
-        // 使用 getPriceValue 安全地解析价格
-        const priceValue = getPriceValue(item);
-        return `<span>${itemDescDisplay} (${item.units} x RM ${priceValue.toFixed(2)})</span>`;
+        // 使用 item.price (RM XX.XX) 保持显示一致性
+        return `<span>${itemDescDisplay} (${item.units} x ${item.price})</span>`; 
     }).join('');
 
     let adminCommentSection = '';
@@ -308,10 +298,8 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
                 ${statusOptions.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('')}
             </select>`;
             
-            // 确保 delete/edit 按钮获取正确的 data-key
             actionsHTML = `
                 ${statusSelectHTML}
-                <button class="update-status-btn action-btn" data-key="${key}">Update Status</button>
                 <button class="action-btn delete-btn" data-key="${key}" ${isCompleted ? 'disabled title="Completed orders must be permanently deleted by Admin from history."' : ''}>Delete</button>
             `;
         } else {
@@ -337,10 +325,10 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
             `;
         }
     }
-    
-    // Salesman 活跃订单显示 3 列 (Date, Company, Status)，Admin/History 显示 6 列
-    const colspanCount = (isSalesmanPage && !isHistory) ? 3 : 6;
 
+    // 🌟 修复：根据页面类型计算 colspan
+    const colspanCount = (isSalesmanPage && !isHistory) ? 3 : 6;
+    
     const detailRow = document.createElement('tr');
     detailRow.className = 'details-row';
     detailRow.setAttribute('data-key', `details-${key}`);
@@ -376,22 +364,14 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
         </td>
     `;
     
-    // Admin Controls Event Listeners
     if (!isSalesmanPage && !isHistory) {
-        // Status Update Listener
-        const updateStatusBtn = detailRow.querySelector('.update-status-btn');
-        if (updateStatusBtn) {
-            updateStatusBtn.addEventListener('click', () => {
-                const statusSelect = detailRow.querySelector(`#statusSelect_${key}`);
-                if (statusSelect) {
-                    set(ref(db, `orders/${key}/status`), statusSelect.value)
-                        .then(() => console.log(`Order ${key} status updated to ${statusSelect.value}`))
-                        .catch(e => console.error("Error updating status:", e));
-                }
+        const statusSelect = detailRow.querySelector(`#statusSelect_${key}`);
+        if (statusSelect) {
+            statusSelect.addEventListener("change", (e) => {
+                set(ref(db, `orders/${key}/status`), e.target.value);
             });
         }
         
-        // Admin Comment Save Listener
         const saveBtn = detailRow.querySelector(`.save-admin-comment-btn-detail`);
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
@@ -429,13 +409,11 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
             form.hp.value = order.hp;
             form.poNumber.value = order.poNumber;
             form.delivery.value = order.delivery;
+            form.salesmanComment.value = order.salesmanComment || '';
             
-            // 确保字段存在再设置值
-            form.salesmanComment && (form.salesmanComment.value = order.salesmanComment || '');
-            form.isUrgent && (form.isUrgent.checked = order.isUrgent || false);
+            if (form.isUrgent) form.isUrgent.checked = order.isUrgent || false;
             
-            // 兼容旧数据
-            currentItems = JSON.parse(JSON.stringify(itemsToRender)); 
+            currentItems = JSON.parse(JSON.stringify(itemsToRender)); // 深拷贝
             renderItemList(); 
             updateFormUI(true); 
             
