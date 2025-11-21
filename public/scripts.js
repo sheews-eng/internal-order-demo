@@ -18,587 +18,487 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const ordersRef = ref(db, 'orders');
 
-const form = document.getElementById("order-form"); 
-const isSalesman = form !== null; 
-const ordersContainer = document.getElementById("orders-container");
-const historyContainer = document.getElementById("history-container");
-const searchInput = document.getElementById("orderSearch"); 
+const form = document.getElementById("order-form");
+const items = []; // Current items for the new order
+let editingOrderId = null; // Store the ID of the order being edited
 
-// Salesman 多商品状态
-let currentItems = []; 
-let renderItemList;   
-let currentEditKey = null; 
+const ordersContainer = document.getElementById('orders-container');
+const historyContainer = document.getElementById('history-container');
+const isSalesman = !!form; // Check if it's the salesman page
 
-// 存储当前折叠状态
-let collapsedGroups = {}; 
-// 存储当前展开的详情行 Key
-let expandedKey = null;
-
-// 🔔 Admin 警报声逻辑
+// Notification logic
 let lastOrderCount = 0;
-let lastUrgentOrderCount = 0; 
-let normalAudio;
-let urgentAudio;
-if (!isSalesman) {
-    // 假设 /ding.mp3 和 /urgent.mp3 存在于根目录
-    normalAudio = new Audio('/ding.mp3'); 
-    urgentAudio = new Audio('/urgent.mp3'); 
+let lastUrgentOrderCount = 0;
+const normalAudio = isSalesman ? null : new Audio('ding.mp3');
+const urgentAudio = isSalesman ? null : new Audio('urgent.mp3'); // Assuming you have urgent.mp3
+
+// --- Utility Functions ---
+
+function clearForm() {
+    form.reset();
+    items.length = 0;
+    renderItemList();
+    editingOrderId = null;
+    document.querySelector('.submit-order-btn').textContent = 'Submit Order';
+    document.querySelector('.submit-order-btn').classList.remove('update-mode');
+    document.querySelector('.cancel-edit-btn').style.display = 'none';
 }
 
-// --- Salesman 功能 (多商品/编辑逻辑) ---
-if (isSalesman) {
-    const addItemBtn = document.getElementById("addItemBtn");
-    const itemListContainer = document.getElementById("item-list-container");
-    const submitBtn = form.querySelector('.submit-order-btn');
-    
-    // 🌟 FIX: 这里原来是 const，必须改成 let，否则后面重新赋值会报错
-    let updateFormUI = (isEditing) => {
-        const existingCancel = form.querySelector('.cancel-edit-btn');
-        if (existingCancel) existingCancel.remove();
+function renderItemList() {
+    const container = document.getElementById('item-list-container');
+    container.innerHTML = '';
 
-        if (isEditing) {
-            submitBtn.textContent = "Update Order";
-            submitBtn.classList.add('update-mode');
-            
-            const cancelBtn = document.createElement('button');
-            cancelBtn.type = 'button';
-            cancelBtn.textContent = 'Cancel Edit';
-            cancelBtn.className = 'cancel-edit-btn';
-            cancelBtn.addEventListener('click', resetForm);
-            submitBtn.parentNode.insertBefore(cancelBtn, submitBtn);
-        } else {
-            submitBtn.textContent = "Submit Order";
-            submitBtn.classList.remove('update-mode');
-        }
-    };
-    
-    // 重置表单状态
-    const resetForm = () => {
-        form.company.value = "";
-        form.attn.value = "";
-        form.hp.value = "";
-        form.poNumber.value = "";
-        form.delivery.value = "";
-        form.salesmanComment.value = ""; 
-        if (form.isUrgent) form.isUrgent.checked = false;
-        
-        currentItems = [];
-        currentEditKey = null;
-        renderItemList();
-        updateFormUI(false);
-    };
-
-    // 渲染商品列表
-    renderItemList = function() {
-        itemListContainer.innerHTML = "";
-        if (currentItems.length === 0) {
-            itemListContainer.innerHTML = "<p class='no-items'>No items added yet. Click 'Add Item' above.</p>";
-            return;
-        }
-
-        currentItems.forEach((item, index) => {
-            const itemDiv = document.createElement("div");
-            itemDiv.className = "card item-preview editable-item";
-            
-            const priceValue = parseFloat(item.price.replace('RM ', ''));
-
-            itemDiv.innerHTML = `
-                <div class="item-detail-row">
-                    <label>Item Description: <input type="text" value="${item.itemDesc || ''}" data-field="itemDesc" data-index="${index}"></label>
-                </div>
-                <div class="item-detail-row">
-                    <label>Units: <input type="number" value="${item.units}" data-field="units" data-index="${index}" min="1"></label>
-                    <label>Price (RM): <input type="number" value="${priceValue.toFixed(2)}" data-field="price" data-index="${index}" step="0.01" min="0.01"></label>
-                </div>
-            `;
-            
-            const removeBtn = document.createElement("button");
-            removeBtn.textContent = "Remove";
-            removeBtn.className = "remove-item-btn";
-            removeBtn.addEventListener("click", () => {
-                currentItems.splice(index, 1);
-                renderItemList();
-            });
-            
-            const inputFields = itemDiv.querySelectorAll('input');
-            inputFields.forEach(input => {
-                input.addEventListener('change', (e) => {
-                    const idx = parseInt(e.target.dataset.index);
-                    const field = e.target.dataset.field;
-                    let value = e.target.value;
-
-                    if (field === 'units') {
-                        value = Math.max(1, parseInt(value) || 1);
-                        e.target.value = value;
-                        currentItems[idx].units = value;
-                    } else if (field === 'price') {
-                        value = parseFloat(value) || 0.01;
-                        e.target.value = value.toFixed(2);
-                        currentItems[idx].price = `RM ${value.toFixed(2)}`;
-                    } else if (field === 'itemDesc') {
-                        currentItems[idx].itemDesc = value;
-                    }
-                });
-            });
-
-            const actionRow = document.createElement('div');
-            actionRow.className = 'item-action-row';
-            actionRow.appendChild(removeBtn);
-
-            itemDiv.appendChild(actionRow);
-            itemListContainer.appendChild(itemDiv);
-        });
-    }; 
-    
-    // 添加商品按钮
-    addItemBtn.addEventListener("click", () => {
-        const itemDesc = document.getElementById("itemDesc").value;
-        const units = document.getElementById("units").value;
-        const price = document.getElementById("price").value;
-
-        if (units <= 0 || price <= 0) {
-            console.warn("Please enter valid item units and price (must be greater than 0).");
-            return;
-        }
-
-        currentItems.push({
-            itemDesc: itemDesc,
-            units: parseInt(units),
-            price: `RM ${parseFloat(price).toFixed(2)}`
-        });
-
-        document.getElementById("itemDesc").value = "";
-        document.getElementById("units").value = "1";
-        document.getElementById("price").value = "0.00";
-        renderItemList();
-    });
-
-    
-    // 提交/更新订单
-    form.addEventListener("submit", e => {
-        e.preventDefault();
-
-        if (currentItems.length === 0) {
-            console.warn("Please add at least one item to the order before submitting.");
-            return;
-        }
-        
-        const invalidItem = currentItems.find(item => item.units <= 0 || parseFloat(item.price.replace('RM ', '')) <= 0);
-        if (invalidItem) {
-            console.warn("Please ensure all item units and prices are valid and non-zero.");
-            return;
-        }
-        
-        const newSalesmanComment = form.salesmanComment.value.trim();
-        const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
-
-        let existingOrderData = {};
-        if (currentEditKey) {
-            const existingRow = document.querySelector(`tr[data-key="${currentEditKey}"]`);
-            if (existingRow) {
-                existingOrderData.status = existingRow.dataset.status || "Pending";
-                existingOrderData.deleted = existingRow.dataset.deleted === 'true';
-                existingOrderData.timestamp = parseInt(existingRow.dataset.timestamp) || Date.now();
-                existingOrderData.adminComment = existingRow.dataset.admincomment || "";
-            }
-        }
-        
-        const data = {
-            company: form.company.value,
-            attn: form.attn.value,
-            hp: form.hp.value,
-            poNumber: form.poNumber.value,
-            delivery: form.delivery.value,
-            orderItems: currentItems, 
-            status: existingOrderData.status || "Pending", 
-            deleted: existingOrderData.deleted || false, 
-            timestamp: existingOrderData.timestamp || Date.now(), 
-            
-            salesmanComment: newSalesmanComment, 
-            adminComment: existingOrderData.adminComment || "",
-            isUrgent: isUrgent 
-        };
-        
-        if (currentEditKey) {
-            set(ref(db, `orders/${currentEditKey}`), data)
-                .then(() => {
-                    console.log(`Order ${currentEditKey} updated successfully.`);
-                    resetForm();
-                })
-                .catch(error => console.error("Update failed:", error));
-        } else {
-            const ordersRef = ref(db, "orders");
-            push(ordersRef, data);
-            resetForm();
-        }
-    });
-
-    renderItemList(); 
-    
-    // Edit mode: Load Urgent status
-    // 🌟 FIX: 这里重新赋值 updateFormUI，因为上面改成了 let，所以现在这里不会报错了
-    const originalUpdateFormUI = updateFormUI;
-    updateFormUI = (isEditing) => {
-        originalUpdateFormUI(isEditing);
-        if (isEditing && currentEditKey) {
-             const existingCard = document.querySelector(`tr[data-key="${currentEditKey}"]`);
-             if (existingCard && form.isUrgent) {
-                 form.isUrgent.checked = existingCard.dataset.isurgent === 'true';
-             }
-        }
-    };
-    
-}
-
-// --- Helper: 创建详情行 ---
-function createDetailsRow(key, order, isSalesmanPage, isHistory) {
-    const totalAmount = (order.orderItems || []).reduce((sum, item) => {
-        const price = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
-        return sum + (price * (item.units || 0));
-    }, 0);
-    
-    const itemsListHTML = (order.orderItems || []).map(item => {
-        const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
-        return `<span>${itemDescDisplay} (${item.units} x ${item.price})</span>`;
-    }).join('');
-
-    let adminCommentSection = '';
-    const adminCommentContent = order.adminComment && order.adminComment.trim() !== "" 
-        ? `<span class="comment-highlight">${order.adminComment}</span>` 
-        : 'N/A';
-
-    if (!isSalesmanPage && !isHistory) {
-        // Admin Page: 可编辑输入框
-        adminCommentSection = `
-            <h4>Admin Remark</h4>
-            <textarea id="adminCommentInput_${key}" class="admin-comment-detail-input">${order.adminComment || ''}</textarea>
-            <button class="save-admin-comment-btn-detail" data-key="${key}">Save Remark</button>
-        `;
-    } else {
-        // Salesman Page / History: 只显示
-        adminCommentSection = `
-            <h4>Admin Remark:</h4>
-            <div class="comment-text">${adminCommentContent}</div>
-        `;
-    }
-
-    let actionsHTML = '';
-    const isCompleted = order.status === "Completed";
-    
-    if (!isHistory) {
-        if (!isSalesmanPage) {
-            const statusOptions = ["Pending", "Ordered", "Completed", "Pending Payment", "Follow Up"]; 
-            const statusSelectHTML = `<select id="statusSelect_${key}" title="Change Status">
-                ${statusOptions.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('')}
-            </select>`;
-            
-            actionsHTML = `
-                ${statusSelectHTML}
-                <button class="action-btn delete-btn" data-key="${key}" ${isCompleted ? 'disabled title="Completed orders must be permanently deleted by Admin from history."' : ''}>Delete</button>
-            `;
-        } else {
-            actionsHTML = `
-                <button class="action-btn edit-btn" data-key="${key}" ${isCompleted ? 'disabled title="Completed orders cannot be edited."' : ''}>Edit</button>
-                <button class="action-btn delete-btn" data-key="${key}" ${isCompleted ? 'disabled title="Completed orders must be permanently deleted by Admin from history."' : ''}>Delete</button>
-            `;
-        }
-    } else {
-        if (!isSalesmanPage) {
-            const timeDifference = Date.now() - order.timestamp;
-            const twentyFourHours = 24 * 60 * 60 * 1000;
-            const isTooSoon = isCompleted && (timeDifference < twentyFourHours);
-            const timeRemaining = isTooSoon ? twentyFourHours - timeDifference : 0;
-            const hours = Math.floor(timeRemaining / 3600000);
-            const minutes = Math.floor((timeRemaining % 3600000) / 60000);
-            const title = isTooSoon 
-                ? `Must wait ${hours}h ${minutes}m (24 hours after completion) to permanently delete.` 
-                : "Permanently delete this order.";
-            
-            actionsHTML = `
-                <button class="action-btn perm-delete-btn" data-key="${key}" ${isTooSoon ? 'disabled' : ''} title="${title}">Permanent Delete</button>
-            `;
-        }
-    }
-
-    const detailRow = document.createElement('tr');
-    detailRow.className = 'details-row';
-    detailRow.setAttribute('data-key', `details-${key}`);
-    detailRow.style.display = 'none';
-    
-    const urgentFlag = order.isUrgent ? ' - 🚨 URGENT' : '';
-    
-    detailRow.innerHTML = `
-        <td colspan="6">
-            <div class="details-content">
-                <div class="details-info">
-                    <h4>Items & Total (${order.orderItems.length} items)${urgentFlag}: RM ${totalAmount.toFixed(2)}</h4>
-                    <div class="items-list-detail">${itemsListHTML}</div>
-                    
-                    <h4 style="margin-top: 15px;">Salesman Comment:</h4>
-                    <div class="comment-text">${order.salesmanComment || 'N/A'}</div>
-                </div>
-                
-                <div class="details-actions">
-                    ${adminCommentSection}
-                    <div style="margin-top: 10px;">${actionsHTML}</div>
-                </div>
-            </div>
-        </td>
-    `;
-    
-    if (!isSalesmanPage && !isHistory) {
-        const statusSelect = detailRow.querySelector(`#statusSelect_${key}`);
-        if (statusSelect) {
-            statusSelect.addEventListener("change", (e) => {
-                set(ref(db, `orders/${key}/status`), e.target.value);
-            });
-        }
-        
-        const saveBtn = detailRow.querySelector(`.save-admin-comment-btn-detail`);
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => {
-                const commentInput = detailRow.querySelector(`#adminCommentInput_${key}`);
-                set(ref(db, `orders/${key}/adminComment`), commentInput.value.trim());
-            });
-        }
-    }
-    
-    // Delete/Move to History
-    const deleteBtn = detailRow.querySelector('.delete-btn');
-    if (deleteBtn && !isHistory) {
-        deleteBtn.addEventListener("click", () => {
-            if (deleteBtn.disabled) return;
-            if (window.confirm("Are you sure you want to move this order to history (soft delete)?")) {
-                set(ref(db, `orders/${key}/deleted`), true);
-            }
-        });
-    }
-
-    // Salesman Edit button handler
-    const editBtn = detailRow.querySelector('.edit-btn');
-    if (editBtn && isSalesmanPage && !isHistory) {
-        editBtn.addEventListener("click", () => {
-            if (editBtn.disabled) return; 
-            
-            // 隐藏详情行
-            document.querySelector(`tr[data-key="details-${key}"]`)?.style.setProperty('display', 'none');
-            expandedKey = null;
-
-            // 加载数据到表单
-            currentEditKey = key; 
-            form.company.value = order.company;
-            form.attn.value = order.attn;
-            form.hp.value = order.hp;
-            form.poNumber.value = order.poNumber;
-            form.delivery.value = order.delivery;
-            form.salesmanComment.value = order.salesmanComment || '';
-            
-            if (form.isUrgent) form.isUrgent.checked = order.isUrgent || false;
-            
-            currentItems = JSON.parse(JSON.stringify(order.orderItems || [])); // 深拷贝
-            renderItemList(); 
-            updateFormUI(true); 
-            
-            // 滚动到表单顶部
-            form.scrollIntoView({ behavior: 'smooth' });
-        });
-    }
-    
-    // Permanent Delete (Admin Only, in History)
-    const permDeleteBtn = detailRow.querySelector('.perm-delete-btn');
-    if (permDeleteBtn) {
-        permDeleteBtn.addEventListener("click", () => {
-            if (permDeleteBtn.disabled) return;
-            if (window.confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
-                remove(ref(db, `orders/${key}`));
-            }
-        });
-    }
-
-    return detailRow;
-}
-
-
-// --- Helper: 创建表格主行 ---
-function createOrderRow(key, order, isSalesmanPage, isHistory) {
-    const urgentClass = order.isUrgent && !isHistory ? 'status-urgent' : ''; 
-    const tr = document.createElement('tr');
-    tr.className = `status-${(order.status || '').replace(/\s+/g, '')} ${order.adminComment && order.adminComment.trim() !== "" ? 'has-comment' : ''} ${urgentClass}`;
-    
-    tr.setAttribute('data-key', key);
-    tr.setAttribute('data-status', order.status || 'Pending');
-    tr.setAttribute('data-admincomment', order.adminComment || ''); 
-    tr.setAttribute('data-isurgent', order.isUrgent || false); 
-    tr.setAttribute('data-deleted', order.deleted || false);
-    tr.setAttribute('data-timestamp', order.timestamp);
-    
-    const urgentDisplay = order.isUrgent && !isHistory ? '🚨 ' : '';
-
-    tr.innerHTML = `
-        <td>${new Date(order.timestamp).toLocaleDateString()}</td>
-        <td>${order.company || 'N/A'}</td>
-        <td>${order.poNumber || 'N/A'}</td>
-        <td>${order.attn || 'N/A'}</td>
-        <td>${order.delivery || 'N/A'}</td>
-        <td>${urgentDisplay}${order.status}</td>
-    `;
-    
-    // 点击行展开/折叠详情
-    tr.addEventListener('click', () => {
-        const detailRow = document.querySelector(`tr[data-key="details-${key}"]`);
-        
-        if (expandedKey === key) {
-            detailRow.style.setProperty('display', 'none');
-            expandedKey = null;
-        } else {
-            // 折叠所有其他详情行
-            document.querySelectorAll('.details-row').forEach(row => {
-                row.style.setProperty('display', 'none');
-            });
-            
-            if (detailRow) {
-                detailRow.style.removeProperty('display');
-                expandedKey = key;
-            }
-        }
-    });
-    
-    return tr;
-}
-
-// 筛选和渲染函数 (表格模式)
-function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
-    if (!allData || !container) return;
-
-    const searchTerm = isHistory ? '' : (searchInput ? searchInput.value.toLowerCase().trim() : '');
-    container.innerHTML = "";
-    
-    const grouped = {
-        "Pending": [],
-        "Ordered": [],
-        "Follow Up": [], 
-        "Pending Payment": [],
-        "Completed": []
-    };
-    
-    const filteredOrders = Object.entries(allData).filter(([key, order]) => {
-        const isDeleted = order.deleted;
-        if (isHistory !== isDeleted) return false;
-
-        if (!isHistory) {
-            const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
-            if (searchTerm && !searchString.includes(searchTerm)) {
-                return false; 
-            }
-        }
-        return true;
-    });
-
-    filteredOrders.forEach(([key, order]) => {
-        const status = order.status || "Pending";
-        if (grouped[status]) { 
-            grouped[status].push({ key, order });
-        } else {
-             grouped["Pending"].push({ key, order });
-        }
-    });
-
-    let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"];
-    if (isHistory) {
-        statusOrder = ["History"];
-        grouped["History"] = filteredOrders.map(([key, order]) => ({ key, order }));
-    }
-
-    const tableHeaders = `
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Company</th>
-                <th>PO #</th>
-                <th>ATTN</th>
-                <th>Delivery Location</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-    `;
-    
-    const renderTable = (groupData, isHistoryTable) => {
-        if (groupData.length === 0) return;
-        
-        const table = document.createElement('table');
-        table.className = `orders-table ${isHistoryTable ? 'history-table' : ''}`;
-        table.innerHTML = tableHeaders;
-        const tbody = document.createElement('tbody');
-        
-        groupData.sort((a, b) => b.order.timestamp - a.order.timestamp);
-        
-        groupData.forEach(({ key, order }) => {
-            tbody.appendChild(createOrderRow(key, order, isSalesman, isHistoryTable));
-            tbody.appendChild(createDetailsRow(key, order, isSalesman, isHistoryTable));
-        });
-        table.appendChild(tbody);
-        return table;
-    };
-
-
-    // 渲染历史订单
-    if (isHistory) {
-        if (grouped["History"].length === 0) {
-            container.innerHTML = "<p class='no-items'>No deleted orders found in history.</p>";
-            return;
-        }
-        container.appendChild(renderTable(grouped["History"], true));
+    if (items.length === 0) {
+        container.innerHTML = '<p class="no-items text-muted">No items added yet.</p>';
         return;
     }
 
+    items.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'editable-item mb-2'; // Use Bootstrap class mb-2 for margin
 
-    // 渲染活动订单 (按状态分组)
-    const tableWrapper = document.createElement('div');
-    tableWrapper.className = 'order-group-container';
+        const displayHtml = `
+            <div class="row align-items-center">
+                <div class="col-6 col-md-6">
+                    <strong>${item.itemDesc}</strong>
+                </div>
+                <div class="col-3 col-md-2 text-end">
+                    Units: ${item.units}
+                </div>
+                <div class="col-3 col-md-2 text-end">
+                    RM ${parseFloat(item.price).toFixed(2)}
+                </div>
+                <div class="col-12 col-md-2 text-end item-action-row mt-2 mt-md-0">
+                    <button type="button" class="btn btn-sm btn-danger remove-item-btn" data-index="${index}">Remove</button>
+                </div>
+            </div>
+        `;
+        
+        itemDiv.innerHTML = displayHtml;
+        container.appendChild(itemDiv);
+    });
+
+    // Add event listeners for removal
+    container.querySelectorAll('.remove-item-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const index = parseInt(e.target.dataset.index);
+            items.splice(index, 1);
+            renderItemList();
+        });
+    });
+}
+
+// --- Order Rendering (Table) ---
+
+function renderDetailsRow(order, isSalesman) {
+    const tr = document.createElement('tr');
+    tr.className = 'details-row';
+    tr.id = `details-${order.id}`;
+
+    const td = document.createElement('td');
+    td.setAttribute('colspan', '6');
+
+    const statusOptions = ['Pending', 'Ordered', 'Completed', 'PendingPayment', 'FollowUp'];
+
+    // Item List HTML
+    const itemsHtml = order.items.map(item => 
+        `<span>${item.itemDesc} (${item.units} x RM ${parseFloat(item.price).toFixed(2)})</span>`
+    ).join('');
+
+    // Admin Controls HTML (only if not salesman page)
+    const adminControlsHtml = !isSalesman ? `
+        <div class="details-actions">
+            <h5 class="h6 text-primary">Admin Control</h5>
+            <div class="mb-3">
+                <label for="statusSelect_${order.id}" class="form-label">Status:</label>
+                <select id="statusSelect_${order.id}" class="form-select mb-2">
+                    ${statusOptions.map(status => 
+                        `<option value="${status}" ${order.status === status ? 'selected' : ''}>${status}</option>`
+                    ).join('')}
+                </select>
+                <button class="btn btn-sm btn-info w-100 mb-2 update-status-btn" data-id="${order.id}">Update Status</button>
+            </div>
+            
+            <div class="mb-3">
+                <label for="adminComment_${order.id}" class="form-label">Admin Comment:</label>
+                <textarea id="adminComment_${order.id}" class="form-control admin-comment-detail-input mb-2">${order.adminComment || ''}</textarea>
+                <button class="btn btn-sm btn-primary w-100 save-admin-comment-btn-detail" data-id="${order.id}">Save Comment</button>
+            </div>
+
+            <hr class="my-2">
+            
+            ${order.deleted ? `
+                <button class="btn btn-sm btn-success w-100 restore-btn" data-id="${order.id}">Restore Order</button>
+                <button class="btn btn-sm btn-danger w-100 mt-2 perm-delete-btn" data-id="${order.id}">Permanent Delete</button>
+            ` : `
+                <button class="btn btn-sm btn-danger w-100 delete-btn mt-2" data-id="${order.id}">Delete Order</button>
+            `}
+        </div>
+    ` : `
+        <div class="details-actions">
+            <h5 class="h6 text-primary">Actions</h5>
+            ${order.deleted ? '' : `<button class="btn btn-sm btn-warning w-100 mb-2 edit-btn" data-id="${order.id}">Edit Order</button>`}
+        </div>
+    `;
+
+
+    td.innerHTML = `
+        <div class="details-content">
+            <div class="details-info">
+                <h5 class="h6 text-secondary">Order Details</h5>
+                <p><strong>Date:</strong> ${order.date}</p>
+                <p><strong>H/P:</strong> ${order.hp}</p>
+                <p><strong>Urgent:</strong> ${order.isUrgent ? '<span class="text-danger fw-bold">YES</span>' : 'No'}</p>
+                
+                <h5 class="h6 text-secondary mt-3">Items</h5>
+                <div class="items-list-detail">
+                    ${itemsHtml || '<span>No items recorded.</span>'}
+                </div>
+
+                <h5 class="h6 text-secondary mt-3">Salesman Comment</h5>
+                <div class="comment-text">${order.salesmanComment || 'No comment.'}</div>
+
+                ${!isSalesman ? `
+                    <h5 class="h6 text-secondary mt-3">Admin Comment</h5>
+                    <div class="comment-text ${order.adminComment ? 'comment-highlight' : ''}">
+                        ${order.adminComment || 'No admin comment yet.'}
+                    </div>
+                ` : ''}
+
+            </div>
+            ${adminControlsHtml}
+        </div>
+    `;
+
+    tr.appendChild(td);
+    return tr;
+}
+
+function renderOrderTable(filteredOrders, container, isSalesman, isHistory) {
+    container.innerHTML = '';
+    const groupedOrders = filteredOrders.reduce((acc, order) => {
+        const status = isHistory ? (order.deletedByAdmin ? 'Deleted by Admin' : 'Deleted by Salesman') : order.status;
+        if (!acc[status]) {
+            acc[status] = [];
+        }
+        acc[status].push(order);
+        return acc;
+    }, {});
+
+    const sortedStatuses = Object.keys(groupedOrders).sort();
+
+    sortedStatuses.forEach(status => {
+        const statusGroupDiv = document.createElement('div');
+        statusGroupDiv.className = 'order-group-container';
+
+        const header = document.createElement('h2');
+        header.className = 'status-group-header h5 mb-0 p-3 bg-light text-dark';
+        header.innerHTML = `${status} (${groupedOrders[status].length}) <span class="float-end">▶</span>`;
+        header.dataset.status = status;
+        statusGroupDiv.appendChild(header);
+
+        const table = document.createElement('table');
+        // 🌟 关键修改：使用 Bootstrap 表格类名 🌟
+        table.className = 'table table-striped table-hover orders-table'; 
+        table.id = `table-${status}`;
+        table.style.display = 'none'; // Initially collapsed
+
+        const thead = table.createTHead();
+        thead.innerHTML = `
+            <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Company</th>
+                <th scope="col">PO #</th>
+                <th scope="col">ATTN</th>
+                <th scope="col">Delivery Location</th>
+                <th scope="col">Status</th>
+            </tr>
+        `;
+
+        const tbody = table.createTBody();
+
+        groupedOrders[status].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(order => {
+            const tr = tbody.insertRow();
+            tr.className = `status-${order.status.replace(/\s/g, '')} ${order.isUrgent ? 'status-urgent' : ''} ${order.adminComment && !isSalesman ? 'has-comment' : ''}`;
+            tr.dataset.id = order.id;
+            tr.dataset.expanded = 'false';
+
+            const date = new Date(order.timestamp).toLocaleString();
+
+            tr.insertCell().textContent = date;
+            tr.insertCell().textContent = order.company;
+            tr.insertCell().textContent = order.po || 'N/A';
+            tr.insertCell().textContent = order.attn;
+            tr.insertCell().textContent = order.deliveryLocation;
+            tr.insertCell().innerHTML = `<strong>${order.status}</strong>`;
+
+            tbody.appendChild(renderDetailsRow(order, isSalesman));
+        });
+
+        statusGroupDiv.appendChild(table);
+        container.appendChild(statusGroupDiv);
+    });
+}
+
+function filterAndRenderOrders(allOrdersData, container, isSalesman, showDeleted) {
+    if (!allOrdersData) {
+        container.innerHTML = '<p class="text-center text-muted">No orders found.</p>';
+        return;
+    }
+
+    const searchValue = (document.getElementById('orderSearch')?.value || '').toLowerCase();
     
-    let ordersFound = false;
-    statusOrder.forEach(status => {
-        if (grouped[status].length > 0) {
-            ordersFound = true;
-            
-            const groupHeader = document.createElement("h3");
-            groupHeader.textContent = `${status} (${grouped[status].length})`;
-            groupHeader.className = 'status-group-header';
-            
-            const table = renderTable(grouped[status], false);
+    const filteredOrders = Object.values(allOrdersData)
+        .filter(order => {
+            const matchesSearch = searchValue === '' || 
+                order.company.toLowerCase().includes(searchValue) ||
+                (order.po && order.po.toLowerCase().includes(searchValue)) ||
+                order.attn.toLowerCase().includes(searchValue);
+                
+            return matchesSearch && (showDeleted ? order.deleted : !order.deleted);
+        });
 
-            if (collapsedGroups[status]) {
-                groupHeader.classList.add('collapsed');
-                table.style.display = 'none';
-            }
+    renderOrderTable(filteredOrders, container, isSalesman, showDeleted);
+}
 
-            groupHeader.addEventListener('click', () => {
-                const isCollapsed = groupHeader.classList.toggle('collapsed');
-                table.style.display = isCollapsed ? 'none' : 'table';
-                collapsedGroups[status] = isCollapsed; 
+
+// --- Firebase Interaction ---
+
+function writeNewOrder(orderData, id = null) {
+    const orderId = id || push(ordersRef).key;
+    const orderPayload = {
+        ...orderData,
+        timestamp: Date.now(),
+        date: new Date().toLocaleString(),
+        status: orderData.status || 'Pending',
+        deleted: false,
+        deletedByAdmin: false
+    };
+
+    set(ref(db, 'orders/' + orderId), orderPayload)
+        .then(() => {
+            console.log("Order written successfully!");
+            clearForm();
+        })
+        .catch((error) => {
+            console.error("Error writing order: ", error);
+            alert("Failed to submit order. Check console for details.");
+        });
+}
+
+// --- Event Handlers ---
+
+if (form) {
+    // Salesman: Add Item Button
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+        const itemDesc = document.getElementById('itemDesc').value.trim();
+        const units = document.getElementById('units').value;
+        const price = document.getElementById('price').value;
+
+        if (itemDesc && units > 0 && price >= 0) {
+            items.push({ 
+                itemDesc, 
+                units: parseInt(units), 
+                price: parseFloat(price) 
             });
-            
-            tableWrapper.appendChild(groupHeader);
-            tableWrapper.appendChild(table);
+            document.getElementById('itemDesc').value = '';
+            document.getElementById('units').value = '1';
+            document.getElementById('price').value = '0.00';
+            renderItemList();
+        } else {
+            alert('Please enter a valid item description, units, and price.');
         }
     });
-    
-    container.appendChild(tableWrapper);
-    
-    if (!ordersFound) {
-        container.innerHTML = "<p class='no-items'>No active orders match the search criteria.</p>";
+
+    // Salesman: Submit Form
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        if (items.length === 0) {
+            alert('Please add at least one item to the order.');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const orderData = {
+            company: formData.get('company'),
+            attn: formData.get('attn'),
+            hp: formData.get('hp'),
+            deliveryLocation: formData.get('deliveryLocation'),
+            po: formData.get('po'),
+            isUrgent: document.getElementById('isUrgent').value === 'true',
+            salesmanComment: formData.get('salesmanComment'),
+            adminComment: '', // Initialize admin comment
+            items: items // Attach items array
+        };
+        
+        writeNewOrder(orderData, editingOrderId);
+    });
+
+    // Salesman: Cancel Edit
+    document.querySelector('.cancel-edit-btn').addEventListener('click', clearForm);
+}
+
+// --- Dynamic Order List (Shared) ---
+
+let allOrdersData = {};
+
+function updateOrderStatus(id, newStatus) {
+    set(ref(db, 'orders/' + id + '/status'), newStatus)
+        .then(() => console.log(`Order ${id} status updated to ${newStatus}`))
+        .catch(e => console.error("Error updating status:", e));
+}
+
+function updateAdminComment(id, comment) {
+    set(ref(db, 'orders/' + id + '/adminComment'), comment)
+        .then(() => console.log(`Order ${id} admin comment updated.`))
+        .catch(e => console.error("Error updating admin comment:", e));
+}
+
+function deleteOrder(id, deletedByAdmin) {
+    // Soft delete
+    set(ref(db, 'orders/' + id + '/deleted'), true)
+        .then(() => set(ref(db, 'orders/' + id + '/deletedByAdmin'), deletedByAdmin))
+        .then(() => console.log(`Order ${id} soft deleted.`))
+        .catch(e => console.error("Error deleting order:", e));
+}
+
+function restoreOrder(id) {
+    set(ref(db, 'orders/' + id + '/deleted'), false)
+        .then(() => set(ref(db, 'orders/' + id + '/deletedByAdmin'), false))
+        .then(() => console.log(`Order ${id} restored.`))
+        .catch(e => console.error("Error restoring order:", e));
+}
+
+function permanentDeleteOrder(id) {
+    if (confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
+        remove(ref(db, 'orders/' + id))
+            .then(() => console.log(`Order ${id} permanently deleted.`))
+            .catch(e => console.error("Error permanently deleting order:", e));
     }
 }
 
-// --- Firebase 监听器 ---
-if (ordersContainer || historyContainer) {
-    let allOrdersData = null; 
+function startEditOrder(id) {
+    const orderToEdit = allOrdersData[id];
+    if (!orderToEdit || !form) return;
 
-    onValue(ref(db, "orders"), snapshot => {
-      const newOrdersData = snapshot.val();
-      
-      if (!isSalesman && newOrdersData) {
+    // Set editing flag
+    editingOrderId = id;
+
+    // Fill basic fields
+    document.getElementById('company').value = orderToEdit.company;
+    document.getElementById('attn').value = orderToEdit.attn;
+    document.getElementById('hp').value = orderToEdit.hp;
+    document.getElementById('deliveryLocation').value = orderToEdit.deliveryLocation;
+    document.getElementById('po').value = orderToEdit.po || '';
+    document.getElementById('isUrgent').value = String(orderToEdit.isUrgent || false);
+    document.getElementById('salesmanComment').value = orderToEdit.salesmanComment || '';
+
+    // Load items
+    items.length = 0; // Clear existing items
+    items.push(...(orderToEdit.items || []));
+    renderItemList();
+
+    // Update buttons
+    document.querySelector('.submit-order-btn').textContent = 'Update Order';
+    document.querySelector('.submit-order-btn').classList.add('update-mode');
+    document.querySelector('.cancel-edit-btn').style.display = 'inline-block';
+
+    // Scroll to form
+    form.scrollIntoView({ behavior: 'smooth' });
+}
+
+
+// Universal Click Handler for the entire document
+document.addEventListener('click', (e) => {
+    // --- Table Row Expand/Collapse ---
+    let targetRow = e.target.closest('tr[data-id]');
+    if (targetRow && targetRow.parentElement.tagName === 'TBODY') {
+        const id = targetRow.dataset.id;
+        const detailsRow = document.getElementById(`details-${id}`);
+        const isExpanded = targetRow.dataset.expanded === 'true';
+
+        // Toggle state
+        targetRow.dataset.expanded = isExpanded ? 'false' : 'true';
+
+        // Toggle visibility of the details row
+        if (detailsRow) {
+            detailsRow.style.display = isExpanded ? 'none' : 'table-row';
+        }
+        return; 
+    }
+
+    // --- Status Group Collapse ---
+    let targetHeader = e.target.closest('.status-group-header');
+    if (targetHeader) {
+        const status = targetHeader.dataset.status;
+        const table = document.getElementById(`table-${status}`);
+        if (table) {
+            const isCollapsed = targetHeader.classList.toggle('collapsed');
+            table.style.display = isCollapsed ? 'none' : 'table';
+        }
+        return;
+    }
+    
+    // --- Admin Actions ---
+    const target = e.target;
+    const orderId = target.dataset.id;
+
+    if (target.classList.contains('update-status-btn')) {
+        const statusSelect = document.getElementById(`statusSelect_${orderId}`);
+        updateOrderStatus(orderId, statusSelect.value);
+    } else if (target.classList.contains('save-admin-comment-btn-detail')) {
+        const commentTextarea = document.getElementById(`adminComment_${orderId}`);
+        updateAdminComment(orderId, commentTextarea.value);
+    } else if (target.classList.contains('delete-btn')) {
+        if (confirm("Confirm soft delete?")) {
+            deleteOrder(orderId, !isSalesman);
+        }
+    } else if (target.classList.contains('restore-btn')) {
+        restoreOrder(orderId);
+    } else if (target.classList.contains('perm-delete-btn')) {
+        permanentDeleteOrder(orderId);
+    } else if (target.classList.contains('edit-btn')) {
+        startEditOrder(orderId);
+    }
+});
+
+// --- Search and Clear Logic ---
+const searchInput = document.getElementById('orderSearch');
+const clearSearchBtn = document.getElementById('clearSearch');
+
+if (searchInput) {
+    searchInput.addEventListener('input', () => {
+        const hasSearchText = searchInput.value.trim().length > 0;
+        clearSearchBtn.style.display = hasSearchText ? 'inline-block' : 'none';
+        
+        filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
+        if (historyContainer) {
+            filterAndRenderOrders(allOrdersData, historyContainer, isSalesman, true);
+        }
+    });
+}
+
+if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearSearchBtn.style.display = 'none';
+        filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
+        if (historyContainer) {
+            filterAndRenderOrders(allOrdersData, historyContainer, isSalesman, true);
+        }
+    });
+}
+
+
+// --- Main Data Listener ---
+onValue(ordersRef, (snapshot) => {
+    const newOrdersData = snapshot.val();
+    
+    // Notification Logic (Only for Admin)
+    if (!isSalesman && newOrdersData) {
           const activeOrders = Object.values(newOrdersData).filter(order => !order.deleted);
           const currentOrderCount = activeOrders.length;
           const currentUrgentOrderCount = activeOrders.filter(order => order.isUrgent).length; 
@@ -606,8 +506,10 @@ if (ordersContainer || historyContainer) {
           if (lastOrderCount > 0 && currentOrderCount > lastOrderCount) {
               
               if (currentUrgentOrderCount > lastUrgentOrderCount && urgentAudio) {
+                  // 优先播放紧急警报
                   urgentAudio.play().catch(e => console.log("Urgent audio play failed:", e)); 
               } else if (normalAudio) {
+                  // 播放普通警报
                   normalAudio.play().catch(e => console.log("Normal audio play failed:", e)); 
               }
           }
@@ -616,20 +518,15 @@ if (ordersContainer || historyContainer) {
           lastUrgentOrderCount = currentUrgentOrderCount; 
       }
       
-      allOrdersData = newOrdersData;
-      
-      if (ordersContainer) {
-          filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
-      }
-      
-      if (historyContainer) {
-          filterAndRenderOrders(allOrdersData, historyContainer, isSalesman, true);
-      }
-    });
-
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
-        });
+    allOrdersData = newOrdersData;
+    
+    // 1. 渲染活动订单 (表格模式)
+    if (ordersContainer) {
+        filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
     }
-}
+    
+    // 2. 渲染历史订单 (表格模式)
+    if (historyContainer) {
+        filterAndRenderOrders(allOrdersData, historyContainer, isSalesman, true);
+    }
+});

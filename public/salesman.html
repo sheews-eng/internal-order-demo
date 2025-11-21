@@ -7,6 +7,8 @@
     
     <link rel="icon" type="image/png" href="/favicon.png"> 
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
     <link rel="stylesheet" href="styles.css"> 
     
     <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
@@ -14,81 +16,93 @@
 </head>
 <body>
 
-    <h1>Submit New Order</h1>
+    <div class="container my-5">
+        <h1 class="mb-4">Submit New Order</h1>
 
-    <form id="order-form" class="order-form">
-        <label>Company Name: 
-            <input type="text" name="company" id="company" required>
-        </label>
-        <label>ATTN: 
-            <input type="text" name="attn" id="attn" required>
-        </label>
-        <label>H/P: 
-            <input type="text" name="hp" id="hp" required>
-        </label>
-        <label>PO Number: 
-            <input type="text" name="poNumber" id="poNumber" required>
-        </label>
-        <label>Delivery Location: 
-            <input type="text" name="delivery" id="delivery" required>
-        </label>
-        
-        <label style="display: block; margin-bottom: 20px;">
-            <input type="checkbox" name="isUrgent" id="isUrgent" style="width: auto; margin-right: 10px;">
-            <strong style="color: #e74c3c;">Mark as URGENT ORDER 🚨</strong>
-        </label>
-
-        <label>Salesman Comment:
-            <textarea name="salesmanComment" id="salesmanComment" placeholder="Add your specific notes here (optional)..."></textarea>
-        </label>
-
-        <h2>Items to Order</h2>
-
-        <div class="item-input-group">
-            <label>Item Description: <input type="text" id="itemDesc"></label>
-            <label>Units: <input type="number" id="units" value="1" min="1"></label>
-            <label>Price (RM): <input type="number" id="price" value="0.00" step="0.01" min="0.00"></label>
-            <button type="button" id="addItemBtn">Add Item</button>
-        </div>
-
-        <h3>Current Items List</h3>
-        <div id="item-list-container" class="item-list-preview">
+        <form id="order-form" class="card p-4 shadow-sm order-form">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Company Name: 
+                        <input type="text" name="company" id="company" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">ATTN: 
+                        <input type="text" name="attn" id="attn" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">H/P: 
+                        <input type="text" name="hp" id="hp" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Delivery Location: 
+                        <input type="text" name="deliveryLocation" id="deliveryLocation" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">PO #: 
+                        <input type="text" name="po" id="po" class="form-control">
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Is Urgent? 
+                        <select id="isUrgent" class="form-select">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-bold">Comment (Internal/Admin): 
+                        <textarea name="salesmanComment" id="salesmanComment" class="form-control"></textarea>
+                    </label>
+                </div>
             </div>
 
-        <button type="submit" class="submit-order-btn">Submit Order</button>
-    </form>
+            <hr class="my-4">
 
-    <hr>
+            <h3 class="h5 mb-3">Add Multiple Items</h3>
+            <div class="row g-2 item-input-group">
+                <div class="col-12 col-lg-5">
+                    <label class="form-label">Item Description: <input type="text" id="itemDesc" class="form-control"></label>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label">Units: <input type="number" id="units" value="1" min="1" class="form-control"></label>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label">Price (RM): <input type="number" id="price" value="0.00" step="0.01" min="0.00" class="form-control"></label>
+                </div>
+                <div class="col-12 col-lg-1 d-grid">
+                    <button type="button" id="addItemBtn" class="btn btn-success mt-lg-3 mt-0">Add Item</button>
+                </div>
+            </div>
 
-    <h1>Active Orders</h1>
-    
-    <div id="filter-controls" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px;">
-        <div style="flex-grow: 1;">
-            <label for="orderSearch">Search (Company, PO #, ATTN):</label>
-            <input type="text" id="orderSearch" placeholder="Start typing to filter orders..." style="width: 100%;">
+            <h3 class="h5 mt-4 mb-3">Current Items List</h3>
+            <div id="item-list-container" class="item-list-preview">
+                </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <button type="button" class="btn btn-secondary me-2 cancel-edit-btn" style="display:none;">Cancel Edit</button>
+                <button type="submit" class="btn btn-primary submit-order-btn">Submit Order</button>
+            </div>
+        </form>
+
+        <hr class="my-5">
+
+        <h1 class="mb-4">Active Orders</h1>
+        <div id="filter-controls" class="d-flex mb-4">
+            <label for="orderSearch" class="form-label me-3 d-none d-sm-block">Search (Company, PO #, ATTN):</label>
+            <input type="text" id="orderSearch" class="form-control" placeholder="Start typing to filter orders...">
+            <button id="clearSearch" class="btn btn-outline-secondary ms-2" style="display:none;">Clear Search</button>
         </div>
-        <button type="button" 
-                onclick="document.getElementById('orderSearch').value=''; document.getElementById('orderSearch').dispatchEvent(new Event('input'));"
-                style="padding: 10px 15px; background-color: #7f8c8d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            Clear Search
-        </button>
+
+        <div id="orders-container" class="table-responsive">
+            </div>
     </div>
-    <p style="font-size: 0.85em; color: #7f8c8d; margin-top: 5px;">
-        * If orders are hidden, click <strong>"Clear Search"</strong> or check the collapsed groups below.
-    </p>
-
-    <div id="orders-container">
-        </div>
     
-    <hr>
-
-    <h1>Order History (Deleted)</h1>
-    <p style="font-size: 0.85em; color: #c0392b; margin-bottom: 10px;">
-        * Orders you clicked "Delete" on are moved here. They are not gone until Admin permanently deletes them.
-    </p>
-    
-    <div id="history-container">
-        </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script type="module" src="scripts.js"></script>
 </body>
