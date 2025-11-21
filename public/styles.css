@@ -202,20 +202,20 @@ hr {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
-    /* 🌟 新增/修改: 深黑色边框 */
+    /* 确保表格主体有边框 */
     border: 1px solid #000000; 
 }
 
+/* 确保所有单元格都有边框 */
 .orders-table th, .orders-table td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
-    /* 🌟 新增/修改: 深黑色边框 */
-    border-right: 1px solid #000000;
+    border: 1px solid #000000; /* 🌟 强制所有单元格有深黑色边框 */
 }
 
+/* 移除额外的底部/右侧边框，因为已经设置了 all border */
 .orders-table th:last-child, .orders-table td:last-child {
-    border-right: none;
+    border-right: 1px solid #000000;
 }
 
 .orders-table thead th {
@@ -247,14 +247,18 @@ hr {
 }
 
 .has-comment td {
-    border-bottom: 2px solid #3498db !important;
+    /* 移除之前的底部线，因为现在是 all borders */
+    /* border-bottom: 2px solid #3498db !important; */
+    /* 标记有评论的行可以突出显示左侧边框 */
+    border-left: 3px solid #3498db !important; 
 }
 
 /* Details Row */
 .details-row td {
     padding: 20px;
     background-color: #f9f9f9;
-    border-bottom: 2px solid #000000; /* 🌟 详情行底部也使用深黑色 */
+    /* 详情行单元格的边框，以分隔与主行 */
+    border: 1px solid #000000; 
 }
 
 .details-content {
@@ -342,13 +346,13 @@ hr {
     .order-form {
         grid-template-columns: 1fr;
         padding: 15px;
-        gap: 10px; /* 减少表单整体间隙 */
+        gap: 10px;
     }
 
     .item-input-group {
         flex-direction: column;
         align-items: stretch;
-        gap: 5px; /* 🌟 减少多商品输入组的垂直间隙 */
+        gap: 5px; 
         padding: 10px;
     }
 
@@ -357,7 +361,7 @@ hr {
     }
     
     .item-list-preview {
-        gap: 5px; /* 🌟 减少商品预览列表的间隙 */
+        gap: 5px; 
     }
     
     .item-preview {
@@ -366,82 +370,64 @@ hr {
 
     .item-detail-row {
         flex-direction: column;
-        gap: 5px; /* 🌟 减少商品详情行的内部间隙 */
+        gap: 5px; 
     }
     
     .item-action-row {
         margin-top: 5px;
     }
 
-
     .details-content {
         flex-direction: column;
-        gap: 15px; /* 减少详情页间隙 */
+        gap: 15px;
     }
 
-    /* 手机端表格样式 (保持原有的堆叠/滚动逻辑) */
+    /* * 🌟 关键修改：取消手机表格的堆叠和隐藏表头，
+     * 保持表格布局，允许水平滚动和列宽收缩。
+     */
     .orders-table {
         font-size: 0.85em;
-        display: block; 
+        display: block; /* 允许水平滚动 */
         overflow-x: auto;
-        white-space: nowrap;
-        border: 1px solid #000000; /* 🌟 确保手机端表格也有深色边框 */
+        white-space: nowrap; /* 防止单元格内容换行，让它保持一行 */
+        width: auto; /* 允许表格根据内容收缩 */
+        max-width: 100%;
+        border: 1px solid #000000;
     }
     
+    /* 移除所有用于堆叠的样式 */
     .orders-table thead, .orders-table tbody, .orders-table th, .orders-table td, .orders-table tr {
-        display: block;
+        display: revert; /* 恢复正常的表格显示 */
+        border: revert;
     }
     
     .orders-table thead tr {
-        position: absolute;
-        top: -9999px;
-        left: -9999px;
+        position: revert;
+        top: revert;
+        left: revert;
     }
     
     .orders-table tr {
-        margin-bottom: 10px;
-        border: 1px solid #000000; /* 🌟 确保手机端每行有深色边框 */
-        border-radius: 4px;
+        margin-bottom: 0; 
+        border: revert;
     }
     
     .orders-table td {
-        border: none;
-        border-bottom: 1px solid #ddd;
-        text-align: right;
-        padding-left: 50%;
-        position: relative;
+        /* 保持边框和内边距，取消手机堆叠专用样式 */
+        border: 1px solid #000000; /* 🌟 All Borders */
+        text-align: left;
+        padding-left: 10px; /* 恢复正常左对齐 */
+        position: static;
     }
     
+    /* 移除手机堆叠时使用的伪元素 (标签) */
     .orders-table td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 6px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        font-weight: bold;
-        text-align: left;
-    }
-    
-    .orders-table tr.details-row td {
-        border: none;
-        text-align: left;
-        padding-left: 20px;
-    }
-    .orders-table tr.details-row td::before {
         content: none;
     }
     
-    /* Salesman View Columns Labeling for Mobile */
-    .orders-table.salesman-table td:nth-child(1)::before { content: "Date:"; }
-    .orders-table.salesman-table td:nth-child(2)::before { content: "Company:"; }
-    .orders-table.salesman-table td:nth-child(3)::before { content: "Status:"; }
-    
-    /* Admin View Columns Labeling for Mobile (Needs to be adjusted for 6 columns) */
-    .orders-table:not(.salesman-table) td:nth-child(1)::before { content: "Date:"; }
-    .orders-table:not(.salesman-table) td:nth-child(2)::before { content: "Company:"; }
-    .orders-table:not(.salesman-table) td:nth-child(3)::before { content: "PO #:"; }
-    .orders-table:not(.salesman-table) td:nth-child(4)::before { content: "ATTN:"; }
-    .orders-table:not(.salesman-table) td:nth-child(5)::before { content: "Delivery Loc:"; }
-    .orders-table:not(.salesman-table) td:nth-child(6)::before { content: "Status:"; }
+    .orders-table tr.details-row td {
+        /* 恢复详情行样式 */
+        border: 1px solid #000000;
+        padding-left: 20px;
+    }
 }
