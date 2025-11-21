@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 // =========================================================
-// 🚨 IMPORTANT: 您的 Firebase 配置 (已更新)
+// 🚨 IMPORTANT: 您的 Firebase 配置 
 // =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -32,22 +32,30 @@ const isSalesman = !!form; // Check if it's the salesman page
 let lastOrderCount = 0;
 let lastUrgentOrderCount = 0;
 const normalAudio = isSalesman ? null : new Audio('ding.mp3');
-const urgentAudio = isSalesman ? null : new Audio('urgent.mp3'); // Assuming you have urgent.mp3
+const urgentAudio = isSalesman ? null : new Audio('urgent.mp3'); 
 
 // --- Utility Functions ---
 
 function clearForm() {
-    form.reset();
+    if (form) form.reset(); // Add check for form existence
     items.length = 0;
     renderItemList();
     editingOrderId = null;
-    document.querySelector('.submit-order-btn').textContent = 'Submit Order';
-    document.querySelector('.submit-order-btn').classList.remove('update-mode');
-    document.querySelector('.cancel-edit-btn').style.display = 'none';
+    // Check elements exist before manipulating them
+    const submitBtn = document.querySelector('.submit-order-btn');
+    const cancelBtn = document.querySelector('.cancel-edit-btn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Submit Order';
+        submitBtn.classList.remove('update-mode');
+    }
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
 }
 
 function renderItemList() {
     const container = document.getElementById('item-list-container');
+    if (!container) return; // Safety check
     container.innerHTML = '';
 
     if (items.length === 0) {
@@ -57,18 +65,22 @@ function renderItemList() {
 
     items.forEach((item, index) => {
         const itemDiv = document.createElement('div');
-        itemDiv.className = 'editable-item mb-2'; // Use Bootstrap class mb-2 for margin
+        itemDiv.className = 'editable-item mb-2'; 
+
+        // 确保item中存在所有必需的字段，防止NaN
+        const units = item.units || 0;
+        const price = item.price || 0;
 
         const displayHtml = `
             <div class="row align-items-center">
                 <div class="col-6 col-md-6">
-                    <strong>${item.itemDesc}</strong>
+                    <strong>${item.itemDesc || 'N/A'}</strong>
                 </div>
                 <div class="col-3 col-md-2 text-end">
-                    Units: ${item.units}
+                    Units: ${units}
                 </div>
                 <div class="col-3 col-md-2 text-end">
-                    RM ${parseFloat(item.price).toFixed(2)}
+                    RM ${parseFloat(price).toFixed(2)}
                 </div>
                 <div class="col-12 col-md-2 text-end item-action-row mt-2 mt-md-0">
                     <button type="button" class="btn btn-sm btn-danger remove-item-btn" data-index="${index}">Remove</button>
@@ -102,10 +114,14 @@ function renderDetailsRow(order, isSalesman) {
 
     const statusOptions = ['Pending', 'Ordered', 'Completed', 'PendingPayment', 'FollowUp'];
 
-    // Item List HTML
-    const itemsHtml = order.items.map(item => 
-        `<span>${item.itemDesc} (${item.units} x RM ${parseFloat(item.price).toFixed(2)})</span>`
-    ).join('');
+    // 🌟 修复点: 确保 order.items 是一个数组，即使在新的代码行数上，逻辑不变 🌟
+    // 使用 order.items || [] 避免 .map() 在 undefined 上调用
+    const itemsHtml = (order.items || []).map(item => {
+        const units = item.units || 0;
+        const price = item.price || 0;
+        return `<span>${item.itemDesc || 'N/A'} (${units} x RM ${parseFloat(price).toFixed(2)})</span>`;
+    }).join('');
+
 
     // Admin Controls HTML (only if not salesman page)
     const adminControlsHtml = !isSalesman ? `
@@ -148,8 +164,8 @@ function renderDetailsRow(order, isSalesman) {
         <div class="details-content">
             <div class="details-info">
                 <h5 class="h6 text-secondary">Order Details</h5>
-                <p><strong>Date:</strong> ${order.date}</p>
-                <p><strong>H/P:</strong> ${order.hp}</p>
+                <p><strong>Date:</strong> ${order.date || 'N/A'}</p>
+                <p><strong>H/P:</strong> ${order.hp || 'N/A'}</p>
                 <p><strong>Urgent:</strong> ${order.isUrgent ? '<span class="text-danger fw-bold">YES</span>' : 'No'}</p>
                 
                 <h5 class="h6 text-secondary mt-3">Items</h5>
@@ -179,7 +195,8 @@ function renderDetailsRow(order, isSalesman) {
 function renderOrderTable(filteredOrders, container, isSalesman, isHistory) {
     container.innerHTML = '';
     const groupedOrders = filteredOrders.reduce((acc, order) => {
-        const status = isHistory ? (order.deletedByAdmin ? 'Deleted by Admin' : 'Deleted by Salesman') : order.status;
+        // 🌟 额外的健壮性检查: 确保 order.status 存在 🌟
+        const status = isHistory ? (order.deletedByAdmin ? 'Deleted by Admin' : 'Deleted by Salesman') : (order.status || 'Pending');
         if (!acc[status]) {
             acc[status] = [];
         }
@@ -200,7 +217,6 @@ function renderOrderTable(filteredOrders, container, isSalesman, isHistory) {
         statusGroupDiv.appendChild(header);
 
         const table = document.createElement('table');
-        // 🌟 关键修改：使用 Bootstrap 表格类名 🌟
         table.className = 'table table-striped table-hover orders-table'; 
         table.id = `table-${status}`;
         table.style.display = 'none'; // Initially collapsed
@@ -221,18 +237,21 @@ function renderOrderTable(filteredOrders, container, isSalesman, isHistory) {
 
         groupedOrders[status].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(order => {
             const tr = tbody.insertRow();
-            tr.className = `status-${order.status.replace(/\s/g, '')} ${order.isUrgent ? 'status-urgent' : ''} ${order.adminComment && !isSalesman ? 'has-comment' : ''}`;
+            // 确保 status 字段在 classname 中是安全的
+            const orderStatusClass = (order.status || 'Pending').replace(/\s/g, '');
+
+            tr.className = `status-${orderStatusClass} ${order.isUrgent ? 'status-urgent' : ''} ${order.adminComment && !isSalesman ? 'has-comment' : ''}`;
             tr.dataset.id = order.id;
             tr.dataset.expanded = 'false';
 
             const date = new Date(order.timestamp).toLocaleString();
 
             tr.insertCell().textContent = date;
-            tr.insertCell().textContent = order.company;
+            tr.insertCell().textContent = order.company || 'N/A';
             tr.insertCell().textContent = order.po || 'N/A';
-            tr.insertCell().textContent = order.attn;
-            tr.insertCell().textContent = order.deliveryLocation;
-            tr.insertCell().innerHTML = `<strong>${order.status}</strong>`;
+            tr.insertCell().textContent = order.attn || 'N/A';
+            tr.insertCell().textContent = order.deliveryLocation || 'N/A';
+            tr.insertCell().innerHTML = `<strong>${order.status || 'Pending'}</strong>`;
 
             tbody.appendChild(renderDetailsRow(order, isSalesman));
         });
@@ -250,12 +269,17 @@ function filterAndRenderOrders(allOrdersData, container, isSalesman, showDeleted
 
     const searchValue = (document.getElementById('orderSearch')?.value || '').toLowerCase();
     
+    // Object.values(allOrdersData) 返回的是数组
     const filteredOrders = Object.values(allOrdersData)
         .filter(order => {
+            // 🌟 额外的健壮性检查: 确保 order.company, order.attn 存在 🌟
+            const company = order.company || '';
+            const attn = order.attn || '';
+            
             const matchesSearch = searchValue === '' || 
-                order.company.toLowerCase().includes(searchValue) ||
+                company.toLowerCase().includes(searchValue) ||
                 (order.po && order.po.toLowerCase().includes(searchValue)) ||
-                order.attn.toLowerCase().includes(searchValue);
+                attn.toLowerCase().includes(searchValue);
                 
             return matchesSearch && (showDeleted ? order.deleted : !order.deleted);
         });
@@ -388,14 +412,15 @@ function startEditOrder(id) {
     editingOrderId = id;
 
     // Fill basic fields
-    document.getElementById('company').value = orderToEdit.company;
-    document.getElementById('attn').value = orderToEdit.attn;
-    document.getElementById('hp').value = orderToEdit.hp;
-    document.getElementById('deliveryLocation').value = orderToEdit.deliveryLocation;
+    document.getElementById('company').value = orderToEdit.company || '';
+    document.getElementById('attn').value = orderToEdit.attn || '';
+    document.getElementById('hp').value = orderToEdit.hp || '';
+    document.getElementById('deliveryLocation').value = orderToEdit.deliveryLocation || '';
     document.getElementById('po').value = orderToEdit.po || '';
     document.getElementById('isUrgent').value = String(orderToEdit.isUrgent || false);
     document.getElementById('salesmanComment').value = orderToEdit.salesmanComment || '';
 
+    // 🌟 修复点: 加载 items 时也进行安全检查 🌟
     // Load items
     items.length = 0; // Clear existing items
     items.push(...(orderToEdit.items || []));
@@ -499,7 +524,8 @@ onValue(ordersRef, (snapshot) => {
     
     // Notification Logic (Only for Admin)
     if (!isSalesman && newOrdersData) {
-          const activeOrders = Object.values(newOrdersData).filter(order => !order.deleted);
+          // 确保 newOrdersData 不为空，并且是对象
+          const activeOrders = Object.values(newOrdersData || {}).filter(order => !order.deleted);
           const currentOrderCount = activeOrders.length;
           const currentUrgentOrderCount = activeOrders.filter(order => order.isUrgent).length; 
           
