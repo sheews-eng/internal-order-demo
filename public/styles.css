@@ -56,15 +56,25 @@ hr {
     resize: vertical;
 }
 
+/* 🌟 优化部分: Add Item 区域布局和视觉分离 */
 .item-input-group {
-    display: flex;
+    /* 使用 Grid 布局代替 Flex，更适合桌面输入对齐 */
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto; /* 描述:数量:价格:按钮 */
     gap: 15px;
-    align-items: flex-end;
-    margin-bottom: 15px;
+    align-items: center;
+
+    /* 增加背景色和阴影，使其成为一个独立的操作卡片 */
+    background: #ecf0f1; 
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 25px; 
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    grid-column: 1 / -1; /* 跨越所有列 */
 }
 
 .item-input-group label {
-    flex-grow: 1;
+    margin-bottom: 0; /* 移除 grid 布局中的冗余底部间距 */
 }
 
 .item-input-group button {
@@ -76,11 +86,14 @@ hr {
     cursor: pointer;
     font-weight: bold;
     white-space: nowrap;
+    height: 40px; /* 使按钮高度与输入框对齐 */
+    margin-top: 10px; /* 增加一点顶部间距 */
 }
 
 /* Item List Preview */
 .item-list-preview {
     margin-top: 10px;
+    grid-column: 1 / -1; /* 跨越所有列 */
 }
 
 .item-preview {
@@ -90,6 +103,7 @@ hr {
     border-radius: 4px;
     margin-bottom: 10px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-left: 5px solid #3498db; /* 增加左侧蓝色条，更醒目 */
 }
 
 .item-preview.editable-item .item-detail-row {
@@ -208,13 +222,13 @@ hr {
     cursor: pointer;
 }
 
-/* Status Highlighting */
-.status-Pending { background-color: #fef9e7; }
-.status-Ordered { background-color: #eafaea; }
-.status-Completed { background-color: #f0f0f0; color: #555; font-style: italic; }
-.status-PendingPayment { background-color: #fbe6e3; }
-.status-FollowUp { background-color: #f7f7e6; }
-.status-urgent { border-left: 5px solid #e74c3c; } /* Urgent flag */
+/* 🌟 优化部分: 状态颜色增强 (高对比度) */
+.status-Pending { background-color: #fff3e0; color: #a1887f; } /* 柔和橙 + 深色文字 */
+.status-Ordered { background-color: #e8f5e9; color: #2e7d32; } /* 柔和绿 + 深色文字 */
+.status-Completed { background-color: #f0f0f0; color: #555; font-style: italic; } /* 灰色 + 中等深色文字 */
+.status-PendingPayment { background-color: #fce4ec; color: #c2185b; } /* 柔和粉 + 深色文字 */
+.status-FollowUp { background-color: #fffde7; color: #f9a825; } /* 柔和黄 + 深色文字 */
+.status-urgent { border-left: 5px solid #e74c3c; } /* Urgent 旗帜 */
 .has-comment td { font-weight: bold; } /* Orders with Admin Comments */
 
 /* Details Row */
@@ -320,38 +334,40 @@ hr {
     }
 
     .item-input-group {
+        /* 在移动端，恢复垂直堆叠更实用 */
+        display: flex;
         flex-direction: column;
         align-items: stretch;
+        /* 保持视觉分离 */
+        background: #ecf0f1; 
+        padding: 15px;
     }
     
-    .item-input-group button {
-        width: 100%;
+    .item-input-group label {
+        margin-bottom: 10px;
     }
-
+    
     .details-content {
         flex-direction: column;
         gap: 20px;
     }
     
     /* ---------------------------------------------------- */
-    /* 🌟 手机表格优化：转换为卡片式 (Card View) 🌟 */
+    /* 手机表格优化：转换为卡片式 (Card View) */
     /* ---------------------------------------------------- */
     .orders-table {
-        /* 允许宽度根据内容调整，但消除水平滚动条 */
         overflow-x: visible; 
         width: 100%;
         border-collapse: collapse;
     }
     
-    /* 隐藏表头 */
     .orders-table thead {
         display: none;
     }
 
-    /* 将每一行 (tr) 变成一个卡片 */
     .orders-table tr {
         border: 1px solid #ddd;
-        margin-bottom: 15px; /* 增加卡片间距 */
+        margin-bottom: 15px; 
         display: block;
         padding: 10px;
         background-color: #ffffff;
@@ -359,33 +375,29 @@ hr {
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     
-    /* 详情行恢复正常，不加边框 */
     .details-row {
         border: none;
         margin-bottom: 0;
         box-shadow: none;
     }
     
-    /* 将单元格 (td) 垂直堆叠 */
     .orders-table td {
         display: block; 
-        text-align: right; /* 数据靠右对齐 */
+        text-align: right; 
         padding: 8px 10px;
         border: none; 
-        border-bottom: 1px dashed #eee; /* 数据线分隔 */
+        border-bottom: 1px dashed #eee; 
     }
     
-    /* 使用 ::before 伪元素显示列标题作为标签 */
     .orders-table td::before {
         text-align: left;
         font-weight: bold;
         float: left;
         color: #555;
-        content: attr(data-label); /* 理论上使用 data-label，但我们用 nth-of-type 代替 */
-        width: 50%; /* 标签占一半宽度 */
+        width: 50%; 
     }
     
-    /* 手动插入标签 (对应 HTML 表格的 6 列) */
+    /* 手动插入标签 */
     .orders-table td:nth-of-type(1)::before { content: "Date: "; }
     .orders-table td:nth-of-type(2)::before { content: "Company: "; }
     .orders-table td:nth-of-type(3)::before { content: "PO #: "; }
