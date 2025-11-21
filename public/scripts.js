@@ -29,7 +29,6 @@ const isSalesman = form !== null;
 // Salesman global states/functions
 let currentItems = []; 
 let currentEditKey = null; 
-// 修复点: 使用 let 声明，防止 'Assignment to constant variable'
 let renderItemList = () => { /* Defined below in isSalesman block */ };   
 
 // 存储当前展开的详情行 Key
@@ -90,12 +89,15 @@ if (isSalesman) {
     
     // 重置表单状态
     const resetForm = () => {
+        // 修复点: 使用可选链或检查确保元素存在
         form.company.value = "";
         form.attn.value = "";
         form.hp.value = "";
         form.poNumber.value = "";
         form.delivery.value = "";
-        form.salesmanComment.value = ""; 
+        
+        // 确保字段存在再设置值
+        if (form.salesmanComment) form.salesmanComment.value = ""; 
         if (form.isUrgent) form.isUrgent.checked = false;
         
         currentItems = [];
@@ -208,7 +210,8 @@ if (isSalesman) {
             return;
         }
         
-        const newSalesmanComment = form.salesmanComment.value.trim();
+        // 修复点: 检查 form.salesmanComment 是否存在
+        const newSalesmanComment = form.salesmanComment ? form.salesmanComment.value.trim() : "";
         const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
 
         let existingOrderData = {};
@@ -333,6 +336,9 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
             `;
         }
     }
+    
+    // 🌟 调整 colspan 的值: Salesman 活跃订单显示 3 列 (Date, Company, Status)
+    const colspanCount = (isSalesmanPage && !isHistory) ? 3 : 6;
 
     const detailRow = document.createElement('tr');
     detailRow.className = 'details-row';
@@ -342,10 +348,19 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     const urgentFlag = order.isUrgent ? ' - 🚨 URGENT' : '';
     
     detailRow.innerHTML = `
-        <td colspan="6">
+        <td colspan="${colspanCount}">
             <div class="details-content">
                 <div class="details-info">
-                    <h4>Items & Total (${itemsToRender.length} items)${urgentFlag}: RM ${totalAmount.toFixed(2)}</h4>
+                    <h4>Order Details</h4>
+                    <ul>
+                        <li><strong>Date:</strong> ${new Date(order.timestamp).toLocaleDateString()}</li>
+                        <li><strong>PO #:</strong> ${order.poNumber || 'N/A'}</li>
+                        <li><strong>ATTN:</strong> ${order.attn || 'N/A'}</li>
+                        <li><strong>H/P:</strong> ${order.hp || 'N/A'}</li>
+                        <li><strong>Delivery:</strong> ${order.delivery || 'N/A'}</li>
+                    </ul>
+
+                    <h4 style="margin-top: 15px;">Items & Total (${itemsToRender.length} items)${urgentFlag}: RM ${totalAmount.toFixed(2)}</h4>
                     <div class="items-list-detail">${itemsListHTML || '<span>No items recorded.</span>'}</div>
                     
                     <h4 style="margin-top: 15px;">Salesman Comment:</h4>
@@ -413,8 +428,9 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
             form.hp.value = order.hp;
             form.poNumber.value = order.poNumber;
             form.delivery.value = order.delivery;
-            form.salesmanComment.value = order.salesmanComment || '';
             
+            // 确保字段存在再设置值
+            if (form.salesmanComment) form.salesmanComment.value = order.salesmanComment || '';
             if (form.isUrgent) form.isUrgent.checked = order.isUrgent || false;
             
             // 兼容旧数据
@@ -457,14 +473,24 @@ function createOrderRow(key, order, isSalesmanPage, isHistory) {
     
     const urgentDisplay = order.isUrgent && !isHistory ? '🚨 ' : '';
 
-    tr.innerHTML = `
-        <td>${new Date(order.timestamp).toLocaleDateString()}</td>
-        <td>${order.company || 'N/A'}</td>
-        <td>${order.poNumber || 'N/A'}</td>
-        <td>${order.attn || 'N/A'}</td>
-        <td>${order.delivery || 'N/A'}</td>
-        <td>${urgentDisplay}${order.status}</td>
-    `;
+    if (isSalesmanPage && !isHistory) {
+        // 🌟 Salesman 视图: 只显示 Date, Company 和 Status (3列)
+        tr.innerHTML = `
+            <td>${new Date(order.timestamp).toLocaleDateString()}</td>
+            <td>${order.company || 'N/A'}</td>
+            <td>${urgentDisplay}${order.status}</td>
+        `;
+    } else {
+        // Admin 或 History 视图: 显示所有列 (6列)
+        tr.innerHTML = `
+            <td>${new Date(order.timestamp).toLocaleDateString()}</td>
+            <td>${order.company || 'N/A'}</td>
+            <td>${order.poNumber || 'N/A'}</td>
+            <td>${order.attn || 'N/A'}</td>
+            <td>${order.delivery || 'N/A'}</td>
+            <td>${urgentDisplay}${order.status}</td>
+        `;
+    }
     
     // 点击行展开/折叠详情
     tr.addEventListener('click', () => {
@@ -536,7 +562,18 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         grouped["History"] = filteredOrders.map(([key, order]) => ({ key, order }));
     }
 
-    const tableHeaders = `
+    // 🌟 根据页面类型设置表头
+    const tableHeaders = (isSalesman && !isHistory) ? 
+        `
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Company</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        ` : 
+        `
         <thead>
             <tr>
                 <th>Date</th>
@@ -547,7 +584,7 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
                 <th>Status</th>
             </tr>
         </thead>
-    `;
+        `;
     
     const renderTable = (groupData, isHistoryTable) => {
         if (groupData.length === 0) return;
