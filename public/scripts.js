@@ -37,11 +37,11 @@ const urgentAudio = isSalesman ? null : new Audio('urgent.mp3');
 // --- Utility Functions ---
 
 function clearForm() {
-    if (form) form.reset(); // Add check for form existence
+    if (form) form.reset(); 
     items.length = 0;
     renderItemList();
     editingOrderId = null;
-    // Check elements exist before manipulating them
+    
     const submitBtn = document.querySelector('.submit-order-btn');
     const cancelBtn = document.querySelector('.cancel-edit-btn');
     if (submitBtn) {
@@ -55,7 +55,7 @@ function clearForm() {
 
 function renderItemList() {
     const container = document.getElementById('item-list-container');
-    if (!container) return; // Safety check
+    if (!container) return; 
     container.innerHTML = '';
 
     if (items.length === 0) {
@@ -67,7 +67,6 @@ function renderItemList() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'editable-item mb-2'; 
 
-        // 确保item中存在所有必需的字段，防止NaN
         const units = item.units || 0;
         const price = item.price || 0;
 
@@ -114,8 +113,8 @@ function renderDetailsRow(order, isSalesman) {
 
     const statusOptions = ['Pending', 'Ordered', 'Completed', 'PendingPayment', 'FollowUp'];
 
-    // 🌟 修复点: 确保 order.items 是一个数组，即使在新的代码行数上，逻辑不变 🌟
-    // 使用 order.items || [] 避免 .map() 在 undefined 上调用
+    // 🌟 修复点: 确保使用 order.items (与提交订单时一致) 并且安全检查 🌟
+    // Item List HTML
     const itemsHtml = (order.items || []).map(item => {
         const units = item.units || 0;
         const price = item.price || 0;
@@ -195,7 +194,6 @@ function renderDetailsRow(order, isSalesman) {
 function renderOrderTable(filteredOrders, container, isSalesman, isHistory) {
     container.innerHTML = '';
     const groupedOrders = filteredOrders.reduce((acc, order) => {
-        // 🌟 额外的健壮性检查: 确保 order.status 存在 🌟
         const status = isHistory ? (order.deletedByAdmin ? 'Deleted by Admin' : 'Deleted by Salesman') : (order.status || 'Pending');
         if (!acc[status]) {
             acc[status] = [];
@@ -237,7 +235,6 @@ function renderOrderTable(filteredOrders, container, isSalesman, isHistory) {
 
         groupedOrders[status].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(order => {
             const tr = tbody.insertRow();
-            // 确保 status 字段在 classname 中是安全的
             const orderStatusClass = (order.status || 'Pending').replace(/\s/g, '');
 
             tr.className = `status-${orderStatusClass} ${order.isUrgent ? 'status-urgent' : ''} ${order.adminComment && !isSalesman ? 'has-comment' : ''}`;
@@ -269,10 +266,8 @@ function filterAndRenderOrders(allOrdersData, container, isSalesman, showDeleted
 
     const searchValue = (document.getElementById('orderSearch')?.value || '').toLowerCase();
     
-    // Object.values(allOrdersData) 返回的是数组
     const filteredOrders = Object.values(allOrdersData)
         .filter(order => {
-            // 🌟 额外的健壮性检查: 确保 order.company, order.attn 存在 🌟
             const company = order.company || '';
             const attn = order.attn || '';
             
@@ -354,8 +349,9 @@ if (form) {
             po: formData.get('po'),
             isUrgent: document.getElementById('isUrgent').value === 'true',
             salesmanComment: formData.get('salesmanComment'),
-            adminComment: '', // Initialize admin comment
-            items: items // Attach items array
+            adminComment: '', 
+            // 🌟 修复点: 确保提交订单时使用的字段是 'items' 🌟
+            items: items 
         };
         
         writeNewOrder(orderData, editingOrderId);
@@ -420,10 +416,9 @@ function startEditOrder(id) {
     document.getElementById('isUrgent').value = String(orderToEdit.isUrgent || false);
     document.getElementById('salesmanComment').value = orderToEdit.salesmanComment || '';
 
-    // 🌟 修复点: 加载 items 时也进行安全检查 🌟
-    // Load items
+    // Load items 
     items.length = 0; // Clear existing items
-    items.push(...(orderToEdit.items || []));
+    items.push(...(orderToEdit.items || [])); // 确保使用 orderToEdit.items
     renderItemList();
 
     // Update buttons
@@ -524,7 +519,6 @@ onValue(ordersRef, (snapshot) => {
     
     // Notification Logic (Only for Admin)
     if (!isSalesman && newOrdersData) {
-          // 确保 newOrdersData 不为空，并且是对象
           const activeOrders = Object.values(newOrdersData || {}).filter(order => !order.deleted);
           const currentOrderCount = activeOrders.length;
           const currentUrgentOrderCount = activeOrders.filter(order => order.isUrgent).length; 
