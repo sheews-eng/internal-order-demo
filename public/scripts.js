@@ -29,7 +29,6 @@ const isSalesman = form !== null;
 // Salesman global states/functions
 let currentItems = []; 
 let currentEditKey = null; 
-// 修复点 2: 使用 let 声明，并提供一个空函数作为初始值，防止在 salesman 页面上被错误地赋值为 const
 let renderItemList = () => { /* Defined below in isSalesman block */ };   
 
 // 存储当前展开的详情行 Key
@@ -46,6 +45,20 @@ let urgentAudio;
 if (!isSalesman) {
     normalAudio = new Audio('/ding.mp3'); 
     urgentAudio = new Audio('/urgent.mp3'); 
+}
+
+// --- 通用函数: 安全地获取价格值 ---
+function getPriceValue(item) {
+    let price = item.price;
+    if (typeof price === 'string') {
+        // 如果是字符串，移除 RM 前缀
+        price = parseFloat(price.replace('RM ', '')) || 0;
+    } else if (typeof price !== 'number') {
+        // 如果既不是字符串也不是数字（可能是 undefined/null），则设为 0
+        price = 0;
+    }
+    // 如果 price 已经是数字，则直接使用
+    return price;
 }
 
 // --- Salesman 功能 (多商品/编辑逻辑) ---
@@ -102,8 +115,8 @@ if (isSalesman) {
             const itemDiv = document.createElement("div");
             itemDiv.className = "card item-preview editable-item";
             
-            // 确保 priceValue 是一个有效的数字，防止 RM NaN
-            const priceValue = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
+            // 🌟 修复点: 使用 getPriceValue 安全地获取价格，防止 RM NaN
+            const priceValue = getPriceValue(item);
 
             itemDiv.innerHTML = `
                 <div class="item-detail-row">
@@ -188,7 +201,7 @@ if (isSalesman) {
             return;
         }
         
-        const invalidItem = currentItems.find(item => item.units <= 0 || parseFloat((item.price || 'RM 0').replace('RM ', '')) <= 0);
+        const invalidItem = currentItems.find(item => item.units <= 0 || getPriceValue(item) <= 0);
         if (invalidItem) {
             console.warn("Please ensure all item units and prices are valid and non-zero.");
             return;
@@ -244,19 +257,19 @@ if (isSalesman) {
 // --- Helper: 创建详情行 ---
 function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     
-    // 修复点 1: 安全地获取商品列表，兼容旧的 'items' 字段
+    // 兼容旧的 'items' 字段
     const itemsToRender = order.orderItems || order.items || []; 
     
     const totalAmount = (itemsToRender).reduce((sum, item) => {
-        // 确保 price 是从字符串正确解析的数字
-        const price = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
+        // 修复: 使用 getPriceValue 安全地解析价格
+        const price = getPriceValue(item);
         return sum + (price * (item.units || 0));
     }, 0);
     
     const itemsListHTML = (itemsToRender).map(item => {
         const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
-        // 修复价格显示 RM NaN 问题
-        const priceValue = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
+        // 修复: 使用 getPriceValue 安全地解析价格，防止 NaN
+        const priceValue = getPriceValue(item);
         return `<span>${itemDescDisplay} (${item.units} x RM ${priceValue.toFixed(2)})</span>`;
     }).join('');
 
