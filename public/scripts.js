@@ -87,17 +87,16 @@ if (isSalesman) {
         }
     };
     
-    // 重置表单状态
+    // 🚨 修复 TypeError: 使用可选链 (?.) 确保元素存在，避免尝试设置 undefined 的 value
     const resetForm = () => {
-        form.company.value = "";
-        form.attn.value = "";
-        form.hp.value = "";
-        form.poNumber.value = "";
-        form.delivery.value = "";
+        form.company?.value = "";
+        form.attn?.value = "";
+        form.hp?.value = "";
+        form.poNumber?.value = "";
+        form.delivery?.value = "";
         
-        // 确保字段存在再设置值 (非必填字段)
-        if (form.salesmanComment) form.salesmanComment.value = ""; 
-        if (form.isUrgent) form.isUrgent.checked = false;
+        form.salesmanComment?.value = ""; 
+        form.isUrgent?.checked = false;
         
         currentItems = [];
         currentEditKey = null;
@@ -209,7 +208,7 @@ if (isSalesman) {
             return;
         }
         
-        // 🚨 修复 TypeError: 使用可选链 (?.) 确保元素存在，否则使用空字符串
+        // 使用可选链 (?.) 确保元素存在，否则使用空字符串/false
         const newSalesmanComment = form.salesmanComment?.value.trim() || "";
         const isUrgent = form.isUrgent?.checked || false; 
 
@@ -225,7 +224,7 @@ if (isSalesman) {
         }
         
         const data = {
-            // 🚨 修复 TypeError: 对所有表单字段使用可选链
+            // 对所有表单字段使用可选链
             company: form.company?.value || "",
             attn: form.attn?.value || "",
             hp: form.hp?.value || "",
@@ -431,8 +430,8 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
             form.delivery.value = order.delivery;
             
             // 确保字段存在再设置值
-            if (form.salesmanComment) form.salesmanComment.value = order.salesmanComment || '';
-            if (form.isUrgent) form.isUrgent.checked = order.isUrgent || false;
+            form.salesmanComment && (form.salesmanComment.value = order.salesmanComment || '');
+            form.isUrgent && (form.isUrgent.checked = order.isUrgent || false);
             
             // 兼容旧数据
             currentItems = JSON.parse(JSON.stringify(itemsToRender)); 
