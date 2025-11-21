@@ -294,7 +294,7 @@ hr {
     border: 1px solid #ccc;
     border-radius: 4px;
     box-sizing: border-box;
-    margin-bottom: 5px; /* 减少与按钮的间距 */
+    margin-bottom: 5px; 
 }
 
 .save-admin-comment-btn-detail {
@@ -342,10 +342,37 @@ hr {
     .details-content {
         flex-direction: column;
         gap: 20px;
+        width: 100%; /* 确保容器占满宽度 */
     }
     
+    .details-info {
+        min-width: 100%; /* 确保详情信息区域占据全部宽度 */
+        box-sizing: border-box;
+    }
+    
+    /* 🌟 修复 Item List 换行问题 */
+    .items-list-detail {
+        width: 100%;
+        overflow-x: hidden;
+        white-space: normal; /* 允许文本换行 */
+    }
+    
+    .items-list-detail span {
+        white-space: normal; /* 允许 Item 描述中的文本换行 */
+        word-break: break-word; /* 强制在长单词内部换行 */
+    }
+    
+    /* 🌟 修复 Salesman Comment 换行问题 */
+    .comment-text {
+        width: 100%;
+        overflow-x: hidden;
+        white-space: pre-wrap; 
+        word-wrap: break-word; 
+        box-sizing: border-box;
+    }
+    
+    /* 修复 Admin Save Remark 按钮跑位 */
     .details-actions {
-        /* 🌟 修复 Admin Save Remark 按钮跑位 */
         flex-direction: column; 
         min-width: 100%; 
     }
@@ -366,26 +393,26 @@ hr {
     /* Salesman Active Orders Table (3列) 样式优化 */
     .orders-table {
         font-size: 0.85em;
-        display: table; /* 恢复 table 显示，使用固定列宽 */
-        overflow-x: hidden; /* 防止水平滚动 */
+        display: table; 
+        overflow-x: hidden; 
         width: 100%; 
         border: 1px solid #000000;
         table-layout: fixed; 
-        white-space: normal; /* 允许文本换行 */
+        white-space: normal; 
     }
     
     .orders-table th, .orders-table td {
-        display: table-cell; /* 确保它们是表格单元格 */
+        display: table-cell; 
         vertical-align: top;
         border: 1px solid #ecf0f1; 
         padding: 8px 5px; 
         text-align: left;
-        white-space: nowrap; /* 防止主行内容换行 */
+        white-space: nowrap; 
         overflow: hidden;
         text-overflow: ellipsis; 
     }
     
-    /* 🌟 Salesman Active Orders 视图的列宽控制 (3列) */
+    /* Salesman Active Orders 视图的列宽控制 (3列) */
     .orders-table.salesman-table {
         width: 100%;
     }
@@ -397,7 +424,7 @@ hr {
         min-width: 75px;
     }
 
-    /* Company 列：尽可能多空间，但要让 Status 足够 */
+    /* Company 列：自适应 */
     .orders-table.salesman-table th:nth-child(2),
     .orders-table.salesman-table td:nth-child(2) {
         width: auto; 
@@ -415,7 +442,7 @@ hr {
         display: block; 
         overflow-x: auto; 
         width: 100%;
-        table-layout: auto; /* 恢复 auto layout 以允许滚动 */
+        table-layout: auto; 
         white-space: nowrap;
     }
 
