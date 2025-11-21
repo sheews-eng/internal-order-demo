@@ -225,7 +225,7 @@ if (isSalesman) {
             attn: form.attn?.value ?? "",
             hp: form.hp?.value ?? "",
             poNumber: form.poNumber?.value ?? "",
-            delivery: form.delivery?.value ?? "", // 确保 delivery 字段被捕获
+            delivery: form.delivery?.value ?? "", 
             
             orderItems: currentItems, 
             status: existingOrderData.status || "Pending", 
@@ -288,7 +288,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
         ? `<span class="comment-highlight">${order.adminComment}</span>` 
         : 'N/A';
     
-    // 🌟 1. Salesman Comment Highlight Logic: 检查 Salesman Comment 是否存在，如果存在则添加 highlight span
+    // 🌟 1. Salesman Comment 恢复高亮
     const salesmanCommentContent = order.salesmanComment && order.salesmanComment.trim() !== "" 
         ? `<span class="comment-highlight">${order.salesmanComment}</span>` 
         : 'N/A';
@@ -348,7 +348,8 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     }
 
     // colspan 总是 6 (Admin/History 视图)
-    const colspanCount = 6; 
+    // ⚠️ 注意：这里必须是 6，因为 Admin/History 视图有 6 列，而 Salesman 视图在 createOrderRow 被设置为 3 列，但详情行必须跨越 Admin 视图的完整宽度。
+    const colspanCount = isSalesmanPage && !isHistory ? 3 : 6; 
     
     const detailRow = document.createElement('tr');
     detailRow.className = 'details-row';
@@ -474,7 +475,7 @@ function createOrderRow(key, order, isSalesmanPage, isHistory) {
     
     const urgentDisplay = order.isUrgent && !isHistory ? '🚨 ' : '';
 
-    // Salesman 视图显示 3 列，Admin/History 视图显示 6 列
+    // 🌟 2. Salesman Active Orders 只显示 Date, Company, Status
     if (isSalesmanPage && !isHistory) {
         tr.innerHTML = `
             <td>${new Date(order.timestamp).toLocaleDateString()}</td>
@@ -482,6 +483,7 @@ function createOrderRow(key, order, isSalesmanPage, isHistory) {
             <td>${urgentDisplay}${order.status}</td>
         `;
     } else {
+        // Admin / History 视图显示全部 6 列
         tr.innerHTML = `
             <td>${new Date(order.timestamp).toLocaleDateString()}</td>
             <td>${order.company || 'N/A'}</td>
@@ -576,14 +578,30 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         </thead>
     `;
     
+    // 🌟 Salesman Active Headers (3列)
+    const salesmanTableHeaders = `
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Company</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+    `;
+    
     const renderTable = (groupData, isHistoryTable) => {
         if (groupData.length === 0) return;
         
         const table = document.createElement('table');
         // 为 Salesman 的 Active Order 表格添加 salesman-table 类
-        const tableClass = (isSalesman && !isHistoryTable) ? 'salesman-table' : ''; 
+        const isSalesmanActive = isSalesman && !isHistoryTable;
+        const tableClass = isSalesmanActive ? 'salesman-table' : ''; 
+        
         table.className = `orders-table ${isHistoryTable ? 'history-table' : ''} ${tableClass}`;
-        table.innerHTML = fullTableHeaders;
+        
+        // 🌟 3. 使用正确的表头
+        table.innerHTML = isSalesmanActive ? salesmanTableHeaders : fullTableHeaders;
+        
         const tbody = document.createElement('tbody');
         
         // 按时间戳倒序排列
@@ -592,7 +610,7 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         groupData.forEach(({ key, order }) => {
             // 在这里调用 createOrderRow 时，会根据 isSalesman 属性决定渲染 3 列还是 6 列
             tbody.appendChild(createOrderRow(key, order, isSalesman, isHistoryTable)); 
-            // 详情行总是渲染 6 列的 colspan
+            // 详情行会根据当前是否是 Salesman Active 视图来决定 colspan
             tbody.appendChild(createDetailsRow(key, order, isSalesman, isHistoryTable)); 
         });
         table.appendChild(tbody);
