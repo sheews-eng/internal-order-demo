@@ -208,14 +208,10 @@ hr {
 
 /* 确保所有单元格都有边框 */
 .orders-table th, .orders-table td {
-    padding: 12px 15px;
+    padding: 12px 10px; /* 减少水平内边距以节省空间 */
     text-align: left;
-    border: 1px solid #000000; /* 🌟 强制所有单元格有深黑色边框 */
-}
-
-/* 移除额外的底部/右侧边框，因为已经设置了 all border */
-.orders-table th:last-child, .orders-table td:last-child {
-    border-right: 1px solid #000000;
+    border: 1px solid #000000; /* 强制所有单元格有深黑色边框 */
+    white-space: nowrap; /* 默认不换行 */
 }
 
 .orders-table thead th {
@@ -247,9 +243,6 @@ hr {
 }
 
 .has-comment td {
-    /* 移除之前的底部线，因为现在是 all borders */
-    /* border-bottom: 2px solid #3498db !important; */
-    /* 标记有评论的行可以突出显示左侧边框 */
     border-left: 3px solid #3498db !important; 
 }
 
@@ -257,7 +250,6 @@ hr {
 .details-row td {
     padding: 20px;
     background-color: #f9f9f9;
-    /* 详情行单元格的边框，以分隔与主行 */
     border: 1px solid #000000; 
 }
 
@@ -356,78 +348,76 @@ hr {
         padding: 10px;
     }
 
-    .item-input-group label {
-        margin-bottom: 0;
-    }
-    
-    .item-list-preview {
-        gap: 5px; 
-    }
-    
-    .item-preview {
-        padding: 10px;
-    }
-
     .item-detail-row {
         flex-direction: column;
         gap: 5px; 
     }
     
-    .item-action-row {
-        margin-top: 5px;
-    }
-
     .details-content {
         flex-direction: column;
         gap: 15px;
     }
 
-    /* * 🌟 关键修改：取消手机表格的堆叠和隐藏表头，
-     * 保持表格布局，允许水平滚动和列宽收缩。
-     */
+    /* * 手机表格通用设置：启用横向滚动 * */
     .orders-table {
         font-size: 0.85em;
-        display: block; /* 允许水平滚动 */
+        display: block; 
         overflow-x: auto;
-        white-space: nowrap; /* 防止单元格内容换行，让它保持一行 */
-        width: auto; /* 允许表格根据内容收缩 */
-        max-width: 100%;
+        width: 100%; /* 确保它占据可用宽度 */
         border: 1px solid #000000;
+        table-layout: fixed; /* 允许我们设置精确的列宽 */
     }
     
-    /* 移除所有用于堆叠的样式 */
+    /* 恢复正常的表格显示，并应用边框 */
     .orders-table thead, .orders-table tbody, .orders-table th, .orders-table td, .orders-table tr {
-        display: revert; /* 恢复正常的表格显示 */
-        border: revert;
-    }
-    
-    .orders-table thead tr {
-        position: revert;
-        top: revert;
-        left: revert;
-    }
-    
-    .orders-table tr {
-        margin-bottom: 0; 
-        border: revert;
+        display: revert; 
     }
     
     .orders-table td {
-        /* 保持边框和内边距，取消手机堆叠专用样式 */
-        border: 1px solid #000000; /* 🌟 All Borders */
+        border: 1px solid #000000; /* All Borders */
+        padding: 8px 5px; /* 进一步减少内边距 */
         text-align: left;
-        padding-left: 10px; /* 恢复正常左对齐 */
-        position: static;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; /* 溢出显示省略号 */
     }
     
-    /* 移除手机堆叠时使用的伪元素 (标签) */
+    /* 🌟 Salesman Active Orders 视图的列宽控制 (3列) */
+    .orders-table.salesman-table th:nth-child(1),
+    .orders-table.salesman-table td:nth-child(1) {
+        width: 70px; /* Date 列 */
+    }
+
+    .orders-table.salesman-table th:nth-child(2),
+    .orders-table.salesman-table td:nth-child(2) {
+        /* 🌟 Company 列：固定宽度，溢出隐藏 */
+        width: 120px; /* 根据您的标记设置宽度 */
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .orders-table.salesman-table th:nth-child(3),
+    .orders-table.salesman-table td:nth-child(3) {
+        width: 80px; /* Status 列 */
+    }
+
+    /* 确保 Admin 视图的 6 列也能在手机上显示 (会启用滚动条) */
+    .orders-table:not(.salesman-table) th,
+    .orders-table:not(.salesman-table) td {
+        width: 100px; 
+        max-width: 100px;
+    }
+    
+    /* 移除手机堆叠时使用的伪元素 */
     .orders-table td::before {
         content: none;
     }
     
     .orders-table tr.details-row td {
-        /* 恢复详情行样式 */
         border: 1px solid #000000;
         padding-left: 20px;
+        white-space: normal; /* 详情行允许内容换行 */
+        max-width: none;
     }
 }
