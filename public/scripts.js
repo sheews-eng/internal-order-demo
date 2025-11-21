@@ -87,16 +87,17 @@ if (isSalesman) {
         }
     };
     
-    // 🚨 修复 TypeError: 使用可选链 (?.) 确保元素存在，避免尝试设置 undefined 的 value
+    // ✅ 修复 SyntaxError: 使用 if 检查确保元素存在，再进行赋值
     const resetForm = () => {
-        form.company?.value = "";
-        form.attn?.value = "";
-        form.hp?.value = "";
-        form.poNumber?.value = "";
-        form.delivery?.value = "";
+        if (form.company) form.company.value = "";
+        if (form.attn) form.attn.value = "";
+        if (form.hp) form.hp.value = "";
+        if (form.poNumber) form.poNumber.value = "";
+        if (form.delivery) form.delivery.value = "";
         
-        form.salesmanComment?.value = ""; 
-        form.isUrgent?.checked = false;
+        // 确保字段存在再设置值 
+        if (form.salesmanComment) form.salesmanComment.value = ""; 
+        if (form.isUrgent) form.isUrgent.checked = false;
         
         currentItems = [];
         currentEditKey = null;
