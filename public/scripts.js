@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 // =========================================================
-// 🚨 IMPORTANT: 您的 Firebase 配置 
+// 🚨 IMPORTANT: 您的 Firebase 配置 (已更新)
 // =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -12,7 +12,7 @@ const firebaseConfig = {
   storageBucket: "internal-orders-765dd.firebasestorage.app",
   messagingSenderId: "778145240016",
   appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
-  measurementId: "G-H0FVWM7V1R"
+  measurementId: "G-H0FVWM7V1R" // measurementId 可选，但包含进来无碍
 };
 // =========================================================
 
@@ -41,23 +41,9 @@ let lastUrgentOrderCount = 0;
 let normalAudio;
 let urgentAudio;
 if (!isSalesman) {
-    // 假设 ding.mp3 和 urgent.mp3 在根目录下
+    // 假设 /ding.mp3 和 /urgent.mp3 存在于根目录
     normalAudio = new Audio('/ding.mp3'); 
     urgentAudio = new Audio('/urgent.mp3'); 
-}
-
-// --- 通用函数: 安全地获取价格值 ---
-function getPriceValue(item) {
-    let price = item.price;
-    if (typeof price === 'string') {
-        // 如果是字符串，移除 RM 前缀
-        price = parseFloat(price.replace('RM ', '')) || 0;
-    } else if (typeof price !== 'number') {
-        // 如果既不是字符串也不是数字（可能是 undefined/null），则设为 0
-        price = 0;
-    }
-    // 如果 price 已经是数字，则直接使用
-    return price;
 }
 
 // --- Salesman 功能 (多商品/编辑逻辑) ---
@@ -87,14 +73,14 @@ if (isSalesman) {
         }
     };
     
-    // ✅ 重置表单: 使用 if 检查确保元素存在，再进行赋值
+    // 重置表单状态
     const resetForm = () => {
-        if (form.company) form.company.value = "";
-        if (form.attn) form.attn.value = "";
-        if (form.hp) form.hp.value = "";
-        if (form.poNumber) form.poNumber.value = "";
-        if (form.delivery) form.delivery.value = "";
-        if (form.salesmanComment) form.salesmanComment.value = ""; 
+        form.company.value = "";
+        form.attn.value = "";
+        form.hp.value = "";
+        form.poNumber.value = "";
+        form.delivery.value = "";
+        form.salesmanComment.value = ""; 
         if (form.isUrgent) form.isUrgent.checked = false;
         
         currentItems = [];
@@ -115,7 +101,7 @@ if (isSalesman) {
             const itemDiv = document.createElement("div");
             itemDiv.className = "card item-preview editable-item";
             
-            const priceValue = getPriceValue(item);
+            const priceValue = parseFloat(item.price.replace('RM ', ''));
 
             itemDiv.innerHTML = `
                 <div class="item-detail-row">
@@ -172,7 +158,9 @@ if (isSalesman) {
         const price = document.getElementById("price").value;
 
         if (units <= 0 || price <= 0) {
+            // 使用自定义提示代替 alert
             console.warn("Please enter valid item units and price (must be greater than 0).");
+            // 这里可以添加一个简单的 DOM 提示元素
             return;
         }
 
@@ -198,15 +186,14 @@ if (isSalesman) {
             return;
         }
         
-        const invalidItem = currentItems.find(item => item.units <= 0 || getPriceValue(item) <= 0);
+        const invalidItem = currentItems.find(item => item.units <= 0 || parseFloat(item.price.replace('RM ', '')) <= 0);
         if (invalidItem) {
             console.warn("Please ensure all item units and prices are valid and non-zero.");
             return;
         }
         
-        // 🌟 核心修复: 使用可选链 (?.) 和空值合并运算符 (?? "") 确保即使 form.fieldName 为 undefined 也不会报错
-        const newSalesmanComment = form.salesmanComment?.value.trim() ?? ""; 
-        const isUrgent = form.isUrgent?.checked ?? false; 
+        const newSalesmanComment = form.salesmanComment.value.trim();
+        const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
 
         // 获取现有订单数据，用于更新模式
         let existingOrderData = {};
@@ -221,12 +208,11 @@ if (isSalesman) {
         }
         
         const data = {
-            company: form.company?.value ?? "",
-            attn: form.attn?.value ?? "",
-            hp: form.hp?.value ?? "",
-            poNumber: form.poNumber?.value ?? "",
-            delivery: form.delivery?.value ?? "", // 确保 delivery 字段被捕获
-            
+            company: form.company.value,
+            attn: form.attn.value,
+            hp: form.hp.value,
+            poNumber: form.poNumber.value,
+            delivery: form.delivery.value,
             orderItems: currentItems, 
             status: existingOrderData.status || "Pending", 
             deleted: existingOrderData.deleted || false, 
@@ -253,27 +239,43 @@ if (isSalesman) {
 
     renderItemList(); 
     
+    // Edit mode: Load Urgent status
+    const originalUpdateFormUI = updateFormUI;
+    updateFormUI = (isEditing) => {
+        originalUpdateFormUI(isEditing);
+        if (isEditing && currentEditKey) {
+             const existingCard = document.querySelector(`tr[data-key="${currentEditKey}"]`);
+             if (existingCard && form.isUrgent) {
+                 form.isUrgent.checked = existingCard.dataset.isurgent === 'true';
+             }
+        }
+    };
+    
 }
 
 // --- Helper: 创建详情行 ---
 function createDetailsRow(key, order, isSalesmanPage, isHistory) {
-    // 兼容旧的 'items' 字段
-    const itemsToRender = order.orderItems || order.items || []; 
+    // 兼容旧的 'items' 字段，但这里只使用 order.orderItems
+    const itemsToRender = order.orderItems || []; 
     
     const totalAmount = (itemsToRender).reduce((sum, item) => {
-        const price = getPriceValue(item);
+        const price = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
         return sum + (price * (item.units || 0));
     }, 0);
     
     const itemsListHTML = (itemsToRender).map(item => {
         const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
-        // 使用 item.price (RM XX.XX) 保持显示一致性
-        return `<span>${itemDescDisplay} (${item.units} x ${item.price})</span>`; 
+        return `<span>${itemDescDisplay} (${item.units} x ${item.price})</span>`;
     }).join('');
 
     let adminCommentSection = '';
     const adminCommentContent = order.adminComment && order.adminComment.trim() !== "" 
         ? `<span class="comment-highlight">${order.adminComment}</span>` 
+        : 'N/A';
+    
+    // 🌟 1. Salesman Comment Highlight Logic: 检查 Salesman Comment 是否存在，如果存在则添加 highlight span
+    const salesmanCommentContent = order.salesmanComment && order.salesmanComment.trim() !== "" 
+        ? `<span class="comment-highlight">${order.salesmanComment}</span>` 
         : 'N/A';
 
     if (!isSalesmanPage && !isHistory) {
@@ -329,9 +331,6 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
         }
     }
 
-    // 根据页面类型计算 colspan
-    const colspanCount = (isSalesmanPage && !isHistory) ? 3 : 6;
-    
     const detailRow = document.createElement('tr');
     detailRow.className = 'details-row';
     detailRow.setAttribute('data-key', `details-${key}`);
@@ -340,23 +339,24 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     const urgentFlag = order.isUrgent ? ' - 🚨 URGENT' : '';
     
     detailRow.innerHTML = `
-        <td colspan="${colspanCount}">
+        <td colspan="6">
             <div class="details-content">
                 <div class="details-info">
-                    <h4>Order Details</h4>
+                    <h4>Order Details</h4> 
                     <ul>
                         <li><strong>Date:</strong> ${new Date(order.timestamp).toLocaleDateString()}</li>
+                        <li><strong>Company:</strong> ${order.company || 'N/A'}</li> // 🌟 2. NEW: Company Name added here
                         <li><strong>PO #:</strong> ${order.poNumber || 'N/A'}</li>
                         <li><strong>ATTN:</strong> ${order.attn || 'N/A'}</li>
                         <li><strong>H/P:</strong> ${order.hp || 'N/A'}</li>
                         <li><strong>Delivery:</strong> ${order.delivery || 'N/A'}</li>
                     </ul>
-
+                    
                     <h4 style="margin-top: 15px;">Items & Total (${itemsToRender.length} items)${urgentFlag}: RM ${totalAmount.toFixed(2)}</h4>
                     <div class="items-list-detail">${itemsListHTML || '<span>No items recorded.</span>'}</div>
                     
                     <h4 style="margin-top: 15px;">Salesman Comment:</h4>
-                    <div class="comment-text">${order.salesmanComment || 'N/A'}</div>
+                    <div class="comment-text">${salesmanCommentContent}</div> // 🌟 1. Use highlighted content
                 </div>
                 
                 <div class="details-actions">
@@ -389,6 +389,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     if (deleteBtn && !isHistory) {
         deleteBtn.addEventListener("click", () => {
             if (deleteBtn.disabled) return;
+            // 使用自定义提示代替 confirm
             if (window.confirm("Are you sure you want to move this order to history (soft delete)?")) {
                 set(ref(db, `orders/${key}/deleted`), true);
             }
@@ -407,16 +408,16 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
 
             // 加载数据到表单
             currentEditKey = key; 
-            if (form.company) form.company.value = order.company || "";
-            if (form.attn) form.attn.value = order.attn || "";
-            if (form.hp) form.hp.value = order.hp || "";
-            if (form.poNumber) form.poNumber.value = order.poNumber || "";
-            if (form.delivery) form.delivery.value = order.delivery || "";
-            if (form.salesmanComment) form.salesmanComment.value = order.salesmanComment || '';
+            form.company.value = order.company;
+            form.attn.value = order.attn;
+            form.hp.value = order.hp;
+            form.poNumber.value = order.poNumber;
+            form.delivery.value = order.delivery;
+            form.salesmanComment.value = order.salesmanComment || '';
             
             if (form.isUrgent) form.isUrgent.checked = order.isUrgent || false;
             
-            currentItems = JSON.parse(JSON.stringify(itemsToRender)); // 深拷贝
+            currentItems = JSON.parse(JSON.stringify(order.orderItems || [])); // 深拷贝
             renderItemList(); 
             updateFormUI(true); 
             
@@ -430,6 +431,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     if (permDeleteBtn) {
         permDeleteBtn.addEventListener("click", () => {
             if (permDeleteBtn.disabled) return;
+            // 使用自定义提示代替 confirm
             if (window.confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
                 remove(ref(db, `orders/${key}`));
             }
@@ -455,24 +457,14 @@ function createOrderRow(key, order, isSalesmanPage, isHistory) {
     
     const urgentDisplay = order.isUrgent && !isHistory ? '🚨 ' : '';
 
-    if (isSalesmanPage && !isHistory) {
-        // Salesman 视图: 显示 Date, Company 和 Status (3列)
-        tr.innerHTML = `
-            <td>${new Date(order.timestamp).toLocaleDateString()}</td>
-            <td>${order.company || 'N/A'}</td>
-            <td>${urgentDisplay}${order.status}</td>
-        `;
-    } else {
-        // Admin 或 History 视图: 显示所有列 (6列)
-        tr.innerHTML = `
-            <td>${new Date(order.timestamp).toLocaleDateString()}</td>
-            <td>${order.company || 'N/A'}</td>
-            <td>${order.poNumber || 'N/A'}</td>
-            <td>${order.attn || 'N/A'}</td>
-            <td>${order.delivery || 'N/A'}</td>
-            <td>${urgentDisplay}${order.status}</td>
-        `;
-    }
+    tr.innerHTML = `
+        <td>${new Date(order.timestamp).toLocaleDateString()}</td>
+        <td>${order.company || 'N/A'}</td>
+        <td>${order.poNumber || 'N/A'}</td>
+        <td>${order.attn || 'N/A'}</td>
+        <td>${order.delivery || 'N/A'}</td>
+        <td>${urgentDisplay}${order.status}</td>
+    `;
     
     // 点击行展开/折叠详情
     tr.addEventListener('click', () => {
@@ -544,18 +536,7 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         grouped["History"] = filteredOrders.map(([key, order]) => ({ key, order }));
     }
 
-    // 🌟 根据页面类型设置表头
-    const tableHeaders = (isSalesman && !isHistory) ? 
-        `
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Company</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        ` : 
-        `
+    const tableHeaders = `
         <thead>
             <tr>
                 <th>Date</th>
@@ -566,13 +547,13 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
                 <th>Status</th>
             </tr>
         </thead>
-        `;
+    `;
     
     const renderTable = (groupData, isHistoryTable) => {
         if (groupData.length === 0) return;
         
         const table = document.createElement('table');
-        // 🌟 更新: 为 Salesman 的 Active Order 表格添加 salesman-table 类
+        // Salesman 视图需要特殊的 class 来配合 CSS 调整列宽
         const tableClass = (isSalesman && !isHistoryTable) ? 'salesman-table' : ''; 
         table.className = `orders-table ${isHistoryTable ? 'history-table' : ''} ${tableClass}`;
         table.innerHTML = tableHeaders;
@@ -642,30 +623,10 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
 // --- Firebase 监听器 ---
 if (ordersContainer || historyContainer) {
     let allOrdersData = null; 
-    const twentyFourHours = 24 * 60 * 60 * 1000; // 24小时的毫秒数
 
     onValue(ref(db, "orders"), snapshot => {
       const newOrdersData = snapshot.val();
       
-      // 🚨 自动软删除逻辑 (Admin 页面自动执行)
-      if (newOrdersData) {
-          Object.entries(newOrdersData).forEach(([key, order]) => {
-              // 检查：如果订单已完成且未被删除
-              if (order.status === "Completed" && !order.deleted) {
-                  // 确保 order.timestamp 是数字
-                  const completionTime = order.timestamp;
-                  const timeDifference = Date.now() - completionTime;
-
-                  if (timeDifference >= twentyFourHours) {
-                      // 订单完成超过 24 小时，自动软删除
-                      set(ref(db, `orders/${key}/deleted`), true)
-                          .then(() => console.log(`Auto-deleted (moved to history): Order ${key}`))
-                          .catch(e => console.error("Auto-delete failed:", e));
-                  }
-              }
-          });
-      }
-
       // 警报声逻辑 (Admin Only)
       if (!isSalesman && newOrdersData) {
           const activeOrders = Object.values(newOrdersData).filter(order => !order.deleted);
