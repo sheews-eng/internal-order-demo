@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 // =========================================================
-// 🚨 IMPORTANT: 您的 Firebase 配置 (已更新)
+// 🚨 IMPORTANT: 您的 Firebase 配置 
 // =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -12,7 +12,7 @@ const firebaseConfig = {
   storageBucket: "internal-orders-765dd.firebasestorage.app",
   messagingSenderId: "778145240016",
   appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
-  measurementId: "G-H0FVWM7V1R" // measurementId 可选，但包含进来无碍
+  measurementId: "G-H0FVWM7V1R" 
 };
 // =========================================================
 
@@ -20,20 +20,23 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const form = document.getElementById("order-form"); 
-const isSalesman = form !== null; 
 const ordersContainer = document.getElementById("orders-container");
 const historyContainer = document.getElementById("history-container");
 const searchInput = document.getElementById("orderSearch"); 
 
-// Salesman 多商品状态
-let currentItems = []; 
-let renderItemList;   
-let currentEditKey = null; 
+const isSalesman = form !== null; 
 
-// 存储当前折叠状态
-let collapsedGroups = {}; 
+// Salesman global states/functions
+let currentItems = []; 
+let currentEditKey = null; 
+// 修复点 2: 使用 let 声明，并提供一个空函数作为初始值，防止在 salesman 页面上被错误地赋值为 const
+let renderItemList = () => { /* Defined below in isSalesman block */ };   
+
 // 存储当前展开的详情行 Key
 let expandedKey = null;
+// 存储当前折叠状态
+let collapsedGroups = {}; 
+
 
 // 🔔 Admin 警报声逻辑
 let lastOrderCount = 0;
@@ -41,14 +44,12 @@ let lastUrgentOrderCount = 0;
 let normalAudio;
 let urgentAudio;
 if (!isSalesman) {
-    // 假设 /ding.mp3 和 /urgent.mp3 存在于根目录
     normalAudio = new Audio('/ding.mp3'); 
     urgentAudio = new Audio('/urgent.mp3'); 
 }
 
 // --- Salesman 功能 (多商品/编辑逻辑) ---
 if (isSalesman) {
-    const addItemBtn = document.getElementById("addItemBtn");
     const itemListContainer = document.getElementById("item-list-container");
     const submitBtn = form.querySelector('.submit-order-btn');
     
@@ -89,7 +90,7 @@ if (isSalesman) {
         updateFormUI(false);
     };
 
-    // 渲染商品列表
+    // 渲染商品列表 (主定义)
     renderItemList = function() {
         itemListContainer.innerHTML = "";
         if (currentItems.length === 0) {
@@ -101,7 +102,7 @@ if (isSalesman) {
             const itemDiv = document.createElement("div");
             itemDiv.className = "card item-preview editable-item";
             
-            // 🌟 修复点: 确保 priceValue 即使在编辑模式下也是一个有效的数字
+            // 确保 priceValue 是一个有效的数字，防止 RM NaN
             const priceValue = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
 
             itemDiv.innerHTML = `
@@ -154,15 +155,14 @@ if (isSalesman) {
     }; 
     
     // 添加商品按钮
+    const addItemBtn = document.getElementById("addItemBtn");
     addItemBtn.addEventListener("click", () => {
         const itemDesc = document.getElementById("itemDesc").value;
         const units = document.getElementById("units").value;
         const price = document.getElementById("price").value;
 
         if (units <= 0 || price <= 0) {
-            // 使用自定义提示代替 alert
             console.warn("Please enter valid item units and price (must be greater than 0).");
-            // 这里可以添加一个简单的 DOM 提示元素
             return;
         }
 
@@ -197,7 +197,6 @@ if (isSalesman) {
         const newSalesmanComment = form.salesmanComment.value.trim();
         const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
 
-        // 获取现有订单数据，用于更新模式
         let existingOrderData = {};
         if (currentEditKey) {
             const existingRow = document.querySelector(`tr[data-key="${currentEditKey}"]`);
@@ -239,33 +238,24 @@ if (isSalesman) {
         }
     });
 
-    renderItemList(); 
-    
-    // Edit mode: Load Urgent status
-    const originalUpdateFormUI = updateFormUI;
-    updateFormUI = (isEditing) => {
-        originalUpdateFormUI(isEditing);
-        if (isEditing && currentEditKey) {
-             const existingCard = document.querySelector(`tr[data-key="${currentEditKey}"]`);
-             if (existingCard && form.isUrgent) {
-                 form.isUrgent.checked = existingCard.dataset.isurgent === 'true';
-             }
-        }
-    };
-    
+    renderItemList(); // Initial call
 }
 
 // --- Helper: 创建详情行 ---
 function createDetailsRow(key, order, isSalesmanPage, isHistory) {
-    const totalAmount = (order.orderItems || []).reduce((sum, item) => {
+    
+    // 修复点 1: 安全地获取商品列表，兼容旧的 'items' 字段
+    const itemsToRender = order.orderItems || order.items || []; 
+    
+    const totalAmount = (itemsToRender).reduce((sum, item) => {
         // 确保 price 是从字符串正确解析的数字
         const price = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
         return sum + (price * (item.units || 0));
     }, 0);
     
-    const itemsListHTML = (order.orderItems || []).map(item => {
+    const itemsListHTML = (itemsToRender).map(item => {
         const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
-        // 🌟 修复点: 确保 price 被正确地解析和格式化为 RM 字符串 (防止 NaN)
+        // 修复价格显示 RM NaN 问题
         const priceValue = parseFloat((item.price || 'RM 0').replace('RM ', '')) || 0;
         return `<span>${itemDescDisplay} (${item.units} x RM ${priceValue.toFixed(2)})</span>`;
     }).join('');
@@ -300,7 +290,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
                 ${statusOptions.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('')}
             </select>`;
             
-            // 修复点: 确保 delete/edit 按钮获取正确的 data-key
+            // 确保 delete/edit 按钮获取正确的 data-key
             actionsHTML = `
                 ${statusSelectHTML}
                 <button class="update-status-btn action-btn" data-key="${key}">Update Status</button>
@@ -341,7 +331,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
         <td colspan="6">
             <div class="details-content">
                 <div class="details-info">
-                    <h4>Items & Total (${order.orderItems.length} items)${urgentFlag}: RM ${totalAmount.toFixed(2)}</h4>
+                    <h4>Items & Total (${itemsToRender.length} items)${urgentFlag}: RM ${totalAmount.toFixed(2)}</h4>
                     <div class="items-list-detail">${itemsListHTML || '<span>No items recorded.</span>'}</div>
                     
                     <h4 style="margin-top: 15px;">Salesman Comment:</h4>
@@ -386,7 +376,6 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     if (deleteBtn && !isHistory) {
         deleteBtn.addEventListener("click", () => {
             if (deleteBtn.disabled) return;
-            // 使用自定义提示代替 confirm
             if (window.confirm("Are you sure you want to move this order to history (soft delete)?")) {
                 set(ref(db, `orders/${key}/deleted`), true);
             }
@@ -414,7 +403,8 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
             
             if (form.isUrgent) form.isUrgent.checked = order.isUrgent || false;
             
-            currentItems = JSON.parse(JSON.stringify(order.orderItems || [])); // 深拷贝
+            // 兼容旧数据
+            currentItems = JSON.parse(JSON.stringify(itemsToRender)); 
             renderItemList(); 
             updateFormUI(true); 
             
@@ -428,7 +418,6 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     if (permDeleteBtn) {
         permDeleteBtn.addEventListener("click", () => {
             if (permDeleteBtn.disabled) return;
-            // 使用自定义提示代替 confirm
             if (window.confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
                 remove(ref(db, `orders/${key}`));
             }
