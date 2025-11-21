@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 // =========================================================
-// 🚨 IMPORTANT: 您的 Firebase 配置 (已更新)
+// 🚨 IMPORTANT: 您的 Firebase 配置 
 // =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCmb4nfpaFMv1Ix4hbMwU2JlYCq6I46ou4",
@@ -41,6 +41,7 @@ let lastUrgentOrderCount = 0;
 let normalAudio;
 let urgentAudio;
 if (!isSalesman) {
+    // 假设 ding.mp3 和 urgent.mp3 在根目录下
     normalAudio = new Audio('/ding.mp3'); 
     urgentAudio = new Audio('/urgent.mp3'); 
 }
@@ -86,7 +87,7 @@ if (isSalesman) {
         }
     };
     
-    // ✅ 修复 TypeError/SyntaxError: 使用 if 检查确保元素存在，再进行赋值
+    // ✅ 重置表单: 使用 if 检查确保元素存在，再进行赋值
     const resetForm = () => {
         if (form.company) form.company.value = "";
         if (form.attn) form.attn.value = "";
@@ -203,8 +204,9 @@ if (isSalesman) {
             return;
         }
         
-        const newSalesmanComment = form.salesmanComment.value.trim();
-        const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
+        // 使用可选链 (?.) 和空值合并运算符 (?? "") 安全读取字段值
+        const newSalesmanComment = form.salesmanComment?.value.trim() ?? ""; 
+        const isUrgent = form.isUrgent?.checked ?? false; 
 
         // 获取现有订单数据，用于更新模式
         let existingOrderData = {};
@@ -218,12 +220,14 @@ if (isSalesman) {
             }
         }
         
+        // 🌟 核心修复: 安全读取所有表单字段
         const data = {
-            company: form.company.value,
-            attn: form.attn.value,
-            hp: form.hp.value,
-            poNumber: form.poNumber.value,
-            delivery: form.delivery.value,
+            company: form.company?.value ?? "",
+            attn: form.attn?.value ?? "",
+            hp: form.hp?.value ?? "",
+            poNumber: form.poNumber?.value ?? "",
+            delivery: form.delivery?.value ?? "", // 确保 delivery 字段被捕获
+            
             orderItems: currentItems, 
             status: existingOrderData.status || "Pending", 
             deleted: existingOrderData.deleted || false, 
@@ -326,7 +330,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
         }
     }
 
-    // 🌟 修复：根据页面类型计算 colspan
+    // 根据页面类型计算 colspan
     const colspanCount = (isSalesmanPage && !isHistory) ? 3 : 6;
     
     const detailRow = document.createElement('tr');
@@ -404,12 +408,12 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
 
             // 加载数据到表单
             currentEditKey = key; 
-            form.company.value = order.company;
-            form.attn.value = order.attn;
-            form.hp.value = order.hp;
-            form.poNumber.value = order.poNumber;
-            form.delivery.value = order.delivery;
-            form.salesmanComment.value = order.salesmanComment || '';
+            if (form.company) form.company.value = order.company || "";
+            if (form.attn) form.attn.value = order.attn || "";
+            if (form.hp) form.hp.value = order.hp || "";
+            if (form.poNumber) form.poNumber.value = order.poNumber || "";
+            if (form.delivery) form.delivery.value = order.delivery || "";
+            if (form.salesmanComment) form.salesmanComment.value = order.salesmanComment || '';
             
             if (form.isUrgent) form.isUrgent.checked = order.isUrgent || false;
             
@@ -453,7 +457,7 @@ function createOrderRow(key, order, isSalesmanPage, isHistory) {
     const urgentDisplay = order.isUrgent && !isHistory ? '🚨 ' : '';
 
     if (isSalesmanPage && !isHistory) {
-        // 🌟 Salesman 视图: 显示 Date, Company 和 Status (3列)
+        // Salesman 视图: 显示 Date, Company 和 Status (3列)
         tr.innerHTML = `
             <td>${new Date(order.timestamp).toLocaleDateString()}</td>
             <td>${order.company || 'N/A'}</td>
