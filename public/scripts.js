@@ -12,7 +12,7 @@ const firebaseConfig = {
   storageBucket: "internal-orders-765dd.firebasestorage.app",
   messagingSenderId: "778145240016",
   appId: "1:778145240016:web:b976e9bac38a86d3381fd5",
-  measurementId: "G-H0FVWM7V1R" // measurementId 可选，但包含进来无碍
+  measurementId: "G-H0FVWM7V1R" 
 };
 // =========================================================
 
@@ -52,8 +52,8 @@ if (isSalesman) {
     const itemListContainer = document.getElementById("item-list-container");
     const submitBtn = form.querySelector('.submit-order-btn');
     
-    // 更新表单 UI (切换编辑模式/新增模式)
-    const updateFormUI = (isEditing) => {
+    // 🌟 FIX: 这里原来是 const，必须改成 let，否则后面重新赋值会报错
+    let updateFormUI = (isEditing) => {
         const existingCancel = form.querySelector('.cancel-edit-btn');
         if (existingCancel) existingCancel.remove();
 
@@ -158,9 +158,7 @@ if (isSalesman) {
         const price = document.getElementById("price").value;
 
         if (units <= 0 || price <= 0) {
-            // 使用自定义提示代替 alert
             console.warn("Please enter valid item units and price (must be greater than 0).");
-            // 这里可以添加一个简单的 DOM 提示元素
             return;
         }
 
@@ -195,7 +193,6 @@ if (isSalesman) {
         const newSalesmanComment = form.salesmanComment.value.trim();
         const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
 
-        // 获取现有订单数据，用于更新模式
         let existingOrderData = {};
         if (currentEditKey) {
             const existingRow = document.querySelector(`tr[data-key="${currentEditKey}"]`);
@@ -240,6 +237,7 @@ if (isSalesman) {
     renderItemList(); 
     
     // Edit mode: Load Urgent status
+    // 🌟 FIX: 这里重新赋值 updateFormUI，因为上面改成了 let，所以现在这里不会报错了
     const originalUpdateFormUI = updateFormUI;
     updateFormUI = (isEditing) => {
         originalUpdateFormUI(isEditing);
@@ -371,7 +369,6 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     if (deleteBtn && !isHistory) {
         deleteBtn.addEventListener("click", () => {
             if (deleteBtn.disabled) return;
-            // 使用自定义提示代替 confirm
             if (window.confirm("Are you sure you want to move this order to history (soft delete)?")) {
                 set(ref(db, `orders/${key}/deleted`), true);
             }
@@ -413,7 +410,6 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     if (permDeleteBtn) {
         permDeleteBtn.addEventListener("click", () => {
             if (permDeleteBtn.disabled) return;
-            // 使用自定义提示代替 confirm
             if (window.confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
                 remove(ref(db, `orders/${key}`));
             }
@@ -488,10 +484,8 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
     
     const filteredOrders = Object.entries(allData).filter(([key, order]) => {
         const isDeleted = order.deleted;
-        // 确保只处理活动订单或历史订单
         if (isHistory !== isDeleted) return false;
 
-        // 搜索过滤 (仅对活动订单有效)
         if (!isHistory) {
             const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
             if (searchTerm && !searchString.includes(searchTerm)) {
@@ -506,7 +500,6 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         if (grouped[status]) { 
             grouped[status].push({ key, order });
         } else {
-             // 如果状态不明确，归类为 Pending
              grouped["Pending"].push({ key, order });
         }
     });
@@ -514,7 +507,6 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
     let statusOrder = ["Pending", "Ordered", "Follow Up", "Pending Payment", "Completed"];
     if (isHistory) {
         statusOrder = ["History"];
-        // 历史订单统一归类
         grouped["History"] = filteredOrders.map(([key, order]) => ({ key, order }));
     }
 
@@ -539,7 +531,6 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         table.innerHTML = tableHeaders;
         const tbody = document.createElement('tbody');
         
-        // 按时间戳倒序排列
         groupData.sort((a, b) => b.order.timestamp - a.order.timestamp);
         
         groupData.forEach(({ key, order }) => {
@@ -607,7 +598,6 @@ if (ordersContainer || historyContainer) {
     onValue(ref(db, "orders"), snapshot => {
       const newOrdersData = snapshot.val();
       
-      // 警报声逻辑 (Admin Only)
       if (!isSalesman && newOrdersData) {
           const activeOrders = Object.values(newOrdersData).filter(order => !order.deleted);
           const currentOrderCount = activeOrders.length;
@@ -616,10 +606,8 @@ if (ordersContainer || historyContainer) {
           if (lastOrderCount > 0 && currentOrderCount > lastOrderCount) {
               
               if (currentUrgentOrderCount > lastUrgentOrderCount && urgentAudio) {
-                  // 优先播放紧急警报
                   urgentAudio.play().catch(e => console.log("Urgent audio play failed:", e)); 
               } else if (normalAudio) {
-                  // 播放普通警报
                   normalAudio.play().catch(e => console.log("Normal audio play failed:", e)); 
               }
           }
@@ -630,18 +618,15 @@ if (ordersContainer || historyContainer) {
       
       allOrdersData = newOrdersData;
       
-      // 1. 渲染活动订单 (表格模式)
       if (ordersContainer) {
           filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
       }
       
-      // 2. 渲染历史订单 (表格模式)
       if (historyContainer) {
           filterAndRenderOrders(allOrdersData, historyContainer, isSalesman, true);
       }
     });
 
-    // 搜索输入事件监听器
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             filterAndRenderOrders(allOrdersData, ordersContainer, isSalesman, false);
