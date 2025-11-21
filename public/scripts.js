@@ -113,8 +113,7 @@ function renderDetailsRow(order, isSalesman) {
 
     const statusOptions = ['Pending', 'Ordered', 'Completed', 'PendingPayment', 'FollowUp'];
 
-    // 🌟 最终修复点: 兼容历史数据 order.orderItems 和新的 order.items 🌟
-    // 先检查 order.items，如果不存在，则检查 order.orderItems
+    // 修复点：兼容历史数据 order.orderItems 和新的 order.items
     const itemsToRender = order.items || order.orderItems || []; 
 
     // Item List HTML (基于 itemsToRender)
@@ -353,7 +352,7 @@ if (form) {
             isUrgent: document.getElementById('isUrgent').value === 'true',
             salesmanComment: formData.get('salesmanComment'),
             adminComment: '', 
-            // 🌟 提交订单时，统一使用 'items' 字段 🌟
+            // 提交订单时，统一使用 'items' 字段
             items: items 
         };
         
@@ -419,7 +418,7 @@ function startEditOrder(id) {
     document.getElementById('isUrgent').value = String(orderToEdit.isUrgent || false);
     document.getElementById('salesmanComment').value = orderToEdit.salesmanComment || '';
 
-    // 🌟 修复点: 编辑时也兼容两种字段 🌟
+    // 编辑时也兼容两种字段
     items.length = 0; 
     const itemsFromOrder = orderToEdit.items || orderToEdit.orderItems || [];
     items.push(...itemsFromOrder); 
@@ -468,24 +467,40 @@ document.addEventListener('click', (e) => {
     
     // --- Admin Actions ---
     const target = e.target;
-    const orderId = target.dataset.id;
+    // 从操作按钮上获取 orderId，而不是依赖 closest() 寻找 TR 
+    const orderId = target.dataset.id; 
 
     if (target.classList.contains('update-status-btn')) {
+        if (!orderId) {
+            console.error("Error: Order ID not found on status button.");
+            return;
+        }
         const statusSelect = document.getElementById(`statusSelect_${orderId}`);
         updateOrderStatus(orderId, statusSelect.value);
+        return; // 处理完毕，返回
     } else if (target.classList.contains('save-admin-comment-btn-detail')) {
+        if (!orderId) return;
         const commentTextarea = document.getElementById(`adminComment_${orderId}`);
         updateAdminComment(orderId, commentTextarea.value);
+        return;
     } else if (target.classList.contains('delete-btn')) {
+        if (!orderId) return;
         if (confirm("Confirm soft delete?")) {
             deleteOrder(orderId, !isSalesman);
         }
+        return;
     } else if (target.classList.contains('restore-btn')) {
+        if (!orderId) return;
         restoreOrder(orderId);
+        return;
     } else if (target.classList.contains('perm-delete-btn')) {
+        if (!orderId) return;
         permanentDeleteOrder(orderId);
+        return;
     } else if (target.classList.contains('edit-btn')) {
+        if (!orderId) return;
         startEditOrder(orderId);
+        return;
     }
 });
 
