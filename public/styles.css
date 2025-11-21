@@ -1,164 +1,403 @@
-/* ========================================================= */
-/* styles.css - Custom Overrides for Bootstrap Look and Feel */
-/* ========================================================= */
-
-/* General Layout & Resets */
+/* General Resets and Layout */
 body {
     font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 20px;
     background-color: #f4f7f6;
     color: #333;
     line-height: 1.6;
 }
 
-/* 覆盖 Bootstrap 容器，增加间距 */
 h1, h2, h3 {
-    margin-top: 2rem !important; 
     color: #2c3e50;
     border-bottom: 2px solid #ecf0f1;
     padding-bottom: 10px;
+    margin-top: 25px;
 }
 
-/* 订单输入表单样式 - 保持专业外观 */
+hr {
+    border: 0;
+    height: 1px;
+    background: #bdc3c7;
+    margin: 40px 0;
+}
+
+/* --- Form Styling (Salesman Page) --- */
 .order-form {
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
 }
 
-/* 商品输入区域 (Add Item) - 保持清晰的区分度 */
-.item-input-group {
-    background: #ecf0f1;
-    padding: 15px;
-    border-radius: 6px;
+.order-form label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
 }
 
-/* 商品列表预览 */
-.item-list-preview {
+.order-form input[type="text"],
+.order-form input[type="number"],
+.order-form textarea {
+    width: 100%;
     padding: 10px;
-    background: #fdfdfd;
-    border: 1px dashed #ccc;
+    margin-top: 5px;
+    border: 1px solid #ccc;
     border-radius: 4px;
+    box-sizing: border-box;
 }
 
-.editable-item {
-    border-left: 5px solid #3498db; 
+.item-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    grid-column: 1 / -1; /* Spans across all columns */
+    padding: 15px 0;
+    border-top: 1px dashed #ccc;
+    border-bottom: 1px dashed #ccc;
+    margin-top: 10px;
 }
 
-/* 按钮颜色覆盖 (使用 !important 确保覆盖 Bootstrap 默认颜色) */
-.submit-order-btn {
-    background-color: #3498db !important;
-    font-weight: bold !important; 
-    border: none !important;
-}
-.submit-order-btn:hover {
-    background-color: #2980b9 !important;
+.item-input-group label {
+    flex-grow: 1;
 }
 
-.submit-order-btn.update-mode {
-    background-color: #f39c12 !important;
+.item-input-group button {
+    flex-shrink: 0;
 }
-.submit-order-btn.update-mode:hover {
-    background-color: #e67e22 !important;
+
+.item-list-preview {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+}
+
+.item-preview {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.editable-item input {
+    margin-top: 5px;
+}
+
+.item-detail-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 10px;
+}
+
+.item-detail-row label {
+    flex: 1;
+}
+
+.item-action-row {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.remove-item-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* --- Controls & Buttons --- */
+#filter-controls {
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+#filter-controls input[type="text"] {
+    padding: 10px;
+    width: 300px;
+    max-width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.submit-order-btn, #addItemBtn {
+    background-color: #3498db;
+    color: white;
+}
+
+.submit-order-btn:hover, #addItemBtn:hover {
+    background-color: #2980b9;
 }
 
 .cancel-edit-btn {
-    background-color: #e74c3c !important;
-    font-weight: bold !important; 
-    border: none !important;
+    background-color: #f39c12;
+    color: white;
+    margin-right: 10px;
 }
+
 .cancel-edit-btn:hover {
-    background-color: #c0392b !important;
+    background-color: #e67e22;
 }
 
-/* --- 🌟 订单状态颜色 (高对比度定制) 🌟 --- */
-
-/* Pending: 柔和红 + 深红色文字 */
-.status-Pending { 
-    background-color: #ffebee !important; 
-    color: #c62828 !important; 
+.update-mode {
+    background-color: #2ecc71;
 }
 
-/* Ordered: 柔和绿 + 深绿色文字 */
-.status-Ordered { 
-    background-color: #e8f5e9 !important; 
-    color: #2e7d32 !important; 
+.update-mode:hover {
+    background-color: #27ae60;
 }
 
-/* Completed: 柔和灰 + 深灰色文字 */
-.status-Completed { 
-    background-color: #f5f5f5 !important; 
-    color: #757575 !important; 
-    font-style: italic !important;
+.action-btn {
+    padding: 6px 12px;
+    margin-right: 5px;
+    font-size: 0.9em;
 }
 
-/* PendingPayment: 柔和黄 + 深黄色文字 */
-.status-PendingPayment { 
-    background-color: #fff8e1 !important; 
-    color: #f9a825 !important; 
+/* --- Table Styling --- */
+
+/* 🌟 FIX 2: 深黑色边框 */
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: white;
 }
 
-/* FollowUp: 柔和紫 + 深紫色文字 */
-.status-FollowUp { 
-    background-color: #f3e5f5 !important; 
-    color: #8e24aa !important; 
+.orders-table th, .orders-table td {
+    padding: 12px 15px;
+    text-align: left;
+    /* 🌟 FIX 2: 深黑色边框 */
+    border: 1px solid #2c3e50; 
+    border-width: 0 1px 1px 0;
 }
 
-/* 具有 Admin Comment 的订单 */
+/* 移除最外层和底部的多余边框 */
+.orders-table {
+    border: 1px solid #2c3e50;
+    border-width: 1px 0 0 1px;
+}
+
+
+.orders-table thead th {
+    background-color: #34495e;
+    color: white;
+    font-weight: bold;
+    border-color: #2c3e50;
+}
+
+/* Status Highlighting */
+.status-Pending { background-color: #fcf8e3; }
+.status-Ordered { background-color: #d9edf7; }
+.status-Completed { background-color: #dff0d8; }
+.status-PendingPayment { background-color: #f2dede; }
+.status-FollowUp { background-color: #ebf7f7; }
+
+/* Highlight rows with Admin Comments */
 .has-comment {
-    border-left: 5px solid #f39c12; /* Orange stripe for comment */
+    border-left: 5px solid #f39c12; /* Orange highlight */
 }
 
-/* Urgent Flag Animation */
+/* Urgent flag */
 .status-urgent {
-    animation: urgent-pulse 1.5s infinite;
-    font-weight: bold !important;
+    border-right: 5px solid #e74c3c !important; /* Red border */
+    font-weight: bold;
 }
 
-@keyframes urgent-pulse {
-    0% { background-color: #ffebee; }
-    50% { background-color: #ffcdd2; }
-    100% { background-color: #ffebee; }
-}
-
-/* --- 详情区域样式 --- */
-.details-row td {
-    padding: 0 !important;
-    border: none !important;
-    background-color: white !important; /* 确保背景是白色 */
-}
-.details-content {
-    background: #ecf0f1;
-    padding: 1.5rem;
+/* --- Group Header & Collapse --- */
+.status-group-header {
+    background-color: #ecf0f1;
+    padding: 10px 15px;
+    margin-top: 25px;
+    margin-bottom: 0;
     border: 1px solid #bdc3c7;
-    border-radius: 0 0 4px 4px;
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap; /* 允许在小屏幕上自动换行 */
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
 }
+
+.status-group-header:hover {
+    background-color: #dce0e4;
+}
+
+.status-group-header.collapsed::after {
+    content: " [+]";
+    font-weight: normal;
+}
+
+.status-group-header:not(.collapsed)::after {
+    content: " [-]";
+    font-weight: normal;
+}
+
+
+/* --- Details Row --- */
+.details-row {
+    background-color: #fcfcfc;
+    border-bottom: 2px solid #2c3e50; /* 强调详情行底部 */
+}
+
+.details-row td {
+    padding: 20px;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.details-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+}
+
 .details-info {
     flex: 2;
-    min-width: 300px;
 }
+
 .details-actions {
     flex: 1;
     min-width: 250px;
-    display: flex;
-    flex-direction: column;
+    padding-left: 20px;
+    border-left: 1px dashed #bdc3c7;
+}
+
+.details-actions h4 {
+    margin-top: 0;
+    padding-bottom: 5px;
 }
 
 .items-list-detail span {
     display: block;
     padding: 3px 0;
+    border-bottom: 1px dotted #ccc;
     font-size: 0.95em;
-    border-bottom: 1px dashed #eee;
+}
+
+.admin-comment-detail-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.comment-highlight {
+    background-color: #ffeaa7;
+    padding: 2px 5px;
+    border-radius: 3px;
+    display: block;
 }
 
 .comment-text {
-    background: #ffffff;
+    padding: 5px 0;
+    border: 1px solid #eee;
+    background-color: #f7f7f7;
     padding: 10px;
     border-radius: 4px;
-    border: 1px solid #ddd;
-    margin-top: 5px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+}
+
+/* Admin Status Controls */
+.details-actions select {
+    padding: 8px;
+    border-radius: 4px;
+    margin-right: 5px;
+}
+
+.save-admin-comment-btn-detail {
+    background-color: #1abc9c;
+    color: white;
+}
+
+.save-admin-comment-btn-detail:hover {
+    background-color: #16a085;
+}
+
+.perm-delete-btn {
+    background-color: #c0392b;
+    color: white;
+}
+
+/* ---------------------------------------------------- */
+/* 🌟 FIX 3: Media Queries for Mobile Responsiveness (电话画面调整) */
+/* ---------------------------------------------------- */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .order-form {
+        grid-template-columns: 1fr;
+        padding: 15px;
+    }
+
+    .item-input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px; /* Adjust gap for stacking */
+    }
+    
+    .item-input-group label, .item-input-group button {
+        width: 100%; /* Full width for inputs and button */
+    }
+    
+    /* 堆叠商品编辑的行 */
+    .item-detail-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* 优化表格显示 (将表格转换为卡片/堆叠模式) */
+    .orders-table {
+        /* 使用 overflow-x 保持表格可水平滚动 */
+        display: block; 
+        overflow-x: auto;
+        white-space: nowrap; /* Prevent cell content from wrapping */
+        font-size: 0.9em;
+    }
+    
+    /* 详情页优化 */
+    .details-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .details-actions {
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px dashed #bdc3c7;
+        padding-top: 20px;
+        margin-top: 10px;
+    }
+    
+    .details-actions select, .details-actions button {
+        margin-bottom: 5px;
+        width: 100%;
+    }
+    
+    .details-actions .action-btn {
+        margin-right: 0;
+    }
+    
+    .details-actions .update-status-btn {
+        margin-top: 10px;
+    }
+
+    /* 搜索框全宽 */
+    #filter-controls input[type="text"] {
+        width: 100%;
+    }
 }

@@ -29,6 +29,7 @@ const isSalesman = form !== null;
 // Salesman global states/functions
 let currentItems = []; 
 let currentEditKey = null; 
+// 修复点: 使用 let 声明，防止 'Assignment to constant variable'
 let renderItemList = () => { /* Defined below in isSalesman block */ };   
 
 // 存储当前展开的详情行 Key
@@ -115,7 +116,7 @@ if (isSalesman) {
             const itemDiv = document.createElement("div");
             itemDiv.className = "card item-preview editable-item";
             
-            // 🌟 修复点: 使用 getPriceValue 安全地获取价格，防止 RM NaN
+            // 使用 getPriceValue 安全地获取价格
             const priceValue = getPriceValue(item);
 
             itemDiv.innerHTML = `
@@ -150,7 +151,7 @@ if (isSalesman) {
                     } else if (field === 'price') {
                         value = parseFloat(value) || 0.01;
                         e.target.value = value.toFixed(2);
-                        // 始终将价格保存为 RM 字符串 (保持现有结构)
+                        // 始终将价格保存为 RM 字符串 (保持一致的 Firebase 结构)
                         currentItems[idx].price = `RM ${value.toFixed(2)}`;
                     } else if (field === 'itemDesc') {
                         currentItems[idx].itemDesc = value;
@@ -261,14 +262,14 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
     const itemsToRender = order.orderItems || order.items || []; 
     
     const totalAmount = (itemsToRender).reduce((sum, item) => {
-        // 修复: 使用 getPriceValue 安全地解析价格
+        // 使用 getPriceValue 安全地解析价格
         const price = getPriceValue(item);
         return sum + (price * (item.units || 0));
     }, 0);
     
     const itemsListHTML = (itemsToRender).map(item => {
         const itemDescDisplay = item.itemDesc || 'N/A (No Description)';
-        // 修复: 使用 getPriceValue 安全地解析价格，防止 NaN
+        // 使用 getPriceValue 安全地解析价格
         const priceValue = getPriceValue(item);
         return `<span>${itemDescDisplay} (${item.units} x RM ${priceValue.toFixed(2)})</span>`;
     }).join('');
@@ -620,10 +621,30 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
 // --- Firebase 监听器 ---
 if (ordersContainer || historyContainer) {
     let allOrdersData = null; 
+    const twentyFourHours = 24 * 60 * 60 * 1000; // 24小时的毫秒数
 
     onValue(ref(db, "orders"), snapshot => {
       const newOrdersData = snapshot.val();
       
+      // 🚨 自动软删除逻辑 (Admin 页面自动执行)
+      if (newOrdersData) {
+          Object.entries(newOrdersData).forEach(([key, order]) => {
+              // 检查：如果订单已完成且未被删除
+              if (order.status === "Completed" && !order.deleted) {
+                  // 确保 order.timestamp 是数字
+                  const completionTime = order.timestamp;
+                  const timeDifference = Date.now() - completionTime;
+
+                  if (timeDifference >= twentyFourHours) {
+                      // 订单完成超过 24 小时，自动软删除
+                      set(ref(db, `orders/${key}/deleted`), true)
+                          .then(() => console.log(`Auto-deleted (moved to history): Order ${key}`))
+                          .catch(e => console.error("Auto-delete failed:", e));
+                  }
+              }
+          });
+      }
+
       // 警报声逻辑 (Admin Only)
       if (!isSalesman && newOrdersData) {
           const activeOrders = Object.values(newOrdersData).filter(order => !order.deleted);
