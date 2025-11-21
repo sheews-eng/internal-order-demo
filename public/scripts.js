@@ -89,14 +89,13 @@ if (isSalesman) {
     
     // 重置表单状态
     const resetForm = () => {
-        // 修复点: 使用可选链或检查确保元素存在
         form.company.value = "";
         form.attn.value = "";
         form.hp.value = "";
         form.poNumber.value = "";
         form.delivery.value = "";
         
-        // 确保字段存在再设置值
+        // 确保字段存在再设置值 (非必填字段)
         if (form.salesmanComment) form.salesmanComment.value = ""; 
         if (form.isUrgent) form.isUrgent.checked = false;
         
@@ -210,9 +209,9 @@ if (isSalesman) {
             return;
         }
         
-        // 修复点: 检查 form.salesmanComment 是否存在
-        const newSalesmanComment = form.salesmanComment ? form.salesmanComment.value.trim() : "";
-        const isUrgent = form.isUrgent ? form.isUrgent.checked : false; 
+        // 🚨 修复 TypeError: 使用可选链 (?.) 确保元素存在，否则使用空字符串
+        const newSalesmanComment = form.salesmanComment?.value.trim() || "";
+        const isUrgent = form.isUrgent?.checked || false; 
 
         let existingOrderData = {};
         if (currentEditKey) {
@@ -226,11 +225,13 @@ if (isSalesman) {
         }
         
         const data = {
-            company: form.company.value,
-            attn: form.attn.value,
-            hp: form.hp.value,
-            poNumber: form.poNumber.value,
-            delivery: form.delivery.value,
+            // 🚨 修复 TypeError: 对所有表单字段使用可选链
+            company: form.company?.value || "",
+            attn: form.attn?.value || "",
+            hp: form.hp?.value || "",
+            poNumber: form.poNumber?.value || "",
+            delivery: form.delivery?.value || "",
+            
             orderItems: currentItems, 
             status: existingOrderData.status || "Pending", 
             deleted: existingOrderData.deleted || false, 
@@ -337,7 +338,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
         }
     }
     
-    // 🌟 调整 colspan 的值: Salesman 活跃订单显示 3 列 (Date, Company, Status)
+    // Salesman 活跃订单显示 3 列 (Date, Company, Status)，Admin/History 显示 6 列
     const colspanCount = (isSalesmanPage && !isHistory) ? 3 : 6;
 
     const detailRow = document.createElement('tr');
@@ -474,7 +475,7 @@ function createOrderRow(key, order, isSalesmanPage, isHistory) {
     const urgentDisplay = order.isUrgent && !isHistory ? '🚨 ' : '';
 
     if (isSalesmanPage && !isHistory) {
-        // 🌟 Salesman 视图: 只显示 Date, Company 和 Status (3列)
+        // 🌟 Salesman 视图: 显示 Date, Company 和 Status (3列)
         tr.innerHTML = `
             <td>${new Date(order.timestamp).toLocaleDateString()}</td>
             <td>${order.company || 'N/A'}</td>
