@@ -539,8 +539,17 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
 
         // 搜索过滤 (仅对活动订单有效)
         if (!isHistory) {
-            const searchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
-            if (searchTerm && !searchString.includes(searchTerm)) {
+            // 基础信息搜索字符串
+            const baseSearchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
+            
+            // 提取所有 Item Description 并创建搜索字符串
+            const itemsToRender = order.orderItems || order.items || [];
+            const itemSearchString = itemsToRender.map(item => (item.itemDesc || '')).join(' ').toLowerCase();
+
+            // 🌟 新增逻辑：合并基础信息和 Item Description 进行搜索
+            const combinedSearchString = `${baseSearchString} ${itemSearchString}`;
+
+            if (searchTerm && !combinedSearchString.includes(searchTerm)) {
                 return false; 
             }
         }
