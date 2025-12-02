@@ -288,7 +288,7 @@ function createDetailsRow(key, order, isSalesmanPage, isHistory) {
         ? `<span class="comment-highlight">${order.adminComment}</span>` 
         : 'N/A';
     
-    // 🌟 1. Salesman Comment 恢复高亮
+    // Salesman Comment 恢复高亮
     const salesmanCommentContent = order.salesmanComment && order.salesmanComment.trim() !== "" 
         ? `<span class="comment-highlight">${order.salesmanComment}</span>` 
         : 'N/A';
@@ -475,7 +475,7 @@ function createOrderRow(key, order, isSalesmanPage, isHistory) {
     
     const urgentDisplay = order.isUrgent && !isHistory ? '🚨 ' : '';
 
-    // 🌟 2. Salesman Active Orders 只显示 Date, Company, Status
+    // Salesman Active Orders 只显示 Date, Company, Status
     if (isSalesmanPage && !isHistory) {
         tr.innerHTML = `
             <td>${new Date(order.timestamp).toLocaleDateString()}</td>
@@ -542,11 +542,11 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
             // 基础信息搜索字符串
             const baseSearchString = `${order.company || ''} ${order.poNumber || ''} ${order.attn || ''}`.toLowerCase();
             
-            // 提取所有 Item Description 并创建搜索字符串
+            // 🌟 Item Description 搜索逻辑
             const itemsToRender = order.orderItems || order.items || [];
             const itemSearchString = itemsToRender.map(item => (item.itemDesc || '')).join(' ').toLowerCase();
 
-            // 🌟 新增逻辑：合并基础信息和 Item Description 进行搜索
+            // 合并基础信息和 Item Description 进行搜索
             const combinedSearchString = `${baseSearchString} ${itemSearchString}`;
 
             if (searchTerm && !combinedSearchString.includes(searchTerm)) {
@@ -573,7 +573,7 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         grouped["History"] = filteredOrders.map(([key, order]) => ({ key, order }));
     }
 
-    // 🌟 根据页面类型设置表头
+    // 根据页面类型设置表头
     const fullTableHeaders = `
         <thead>
             <tr>
@@ -587,7 +587,7 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         </thead>
     `;
     
-    // 🌟 Salesman Active Headers (3列)
+    // Salesman Active Headers (3列)
     const salesmanTableHeaders = `
         <thead>
             <tr>
@@ -608,7 +608,7 @@ function filterAndRenderOrders(allData, container, isSalesman, isHistory) {
         
         table.className = `orders-table ${isHistoryTable ? 'history-table' : ''} ${tableClass}`;
         
-        // 🌟 3. 使用正确的表头
+        // 使用正确的表头
         table.innerHTML = isSalesmanActive ? salesmanTableHeaders : fullTableHeaders;
         
         const tbody = document.createElement('tbody');
