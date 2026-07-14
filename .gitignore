@@ -64,6 +64,11 @@ node_modules/
 
 # dotenv environment variables file
 .env
+sync-agent/.env
+
+# Firebase Admin / sync agent secrets
+sync-agent/serviceAccount.json
+**/serviceAccount*.json
 
 # dataconnect generated files
 .dataconnect

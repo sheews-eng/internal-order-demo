@@ -10,16 +10,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-
-    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js"></script>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('io-theme') || 'light';
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
 </head>
 <body>
 
     <header class="app-header">
         <img src="/favicon.png" class="logo" alt="SSL">
         <h1>Admin</h1>
-        <a href="index.html" class="badge-role">Home</a>
+        <div class="header-actions">
+            <button type="button" class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+            <a href="index.html" class="badge-role">Home</a>
+        </div>
     </header>
 
     <nav class="tab-bar">
@@ -33,7 +41,7 @@
     <!-- ===================== ACTIVE ORDERS ===================== -->
     <section class="tab-panel active" data-panel="active">
         <div class="search-bar">
-            <input type="text" id="orderSearch" placeholder="Search company, PO#, ATTN, item...">
+            <input type="text" id="orderSearch" placeholder="Search company, PO#, ATTN, item, amount...">
         </div>
         <div id="orders-container"></div>
     </section>
@@ -42,6 +50,9 @@
     <section class="tab-panel" data-panel="history">
         <div id="history-container"></div>
     </section>
+
+    <div id="toast-root" class="toast-root" aria-live="polite"></div>
+    <div id="modal-root"></div>
 
     <script type="module" src="scripts.js"></script>
 </body>

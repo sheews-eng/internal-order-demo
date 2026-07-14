@@ -1,0 +1,14 @@
+# Cloudflare Pages project for Internal Orders frontend
+# Deploy: npx wrangler pages deploy public --project-name=internal-orders
+#
+# Also set Pages env var:
+#   ORIGIN_API_BASE = https://your-express-or-tunnel-url
+# so that /api/* (functions/api/[[path]].js) proxies to AutoCount Express.
+
+name = "internal-order-demo"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "public"
+
+# Set in Cloudflare Dashboard → Pages → Settings → Environment variables:
+#   ORIGIN_API_BASE = https://YOUR-EXPRESS-OR-TUNNEL-URL
+# (must reach C:\API BACKUP Express that connects to SQL AED_SSL)

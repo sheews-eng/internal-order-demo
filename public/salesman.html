@@ -10,16 +10,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-
-    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js"></script>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('io-theme') || 'light';
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
 </head>
 <body>
 
     <header class="app-header">
         <img src="/favicon.png" class="logo" alt="SSL">
         <h1>Salesman</h1>
-        <a href="index.html" class="badge-role">Home</a>
+        <div class="header-actions">
+            <button type="button" class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+            <a href="index.html" class="badge-role">Home</a>
+        </div>
     </header>
 
     <nav class="tab-bar">
@@ -37,9 +45,12 @@
             <fieldset class="form-section">
                 <legend>Customer</legend>
                 <div class="field-grid cols-2">
-                    <div class="field">
-                        <label for="company">Company Name</label>
-                        <input type="text" name="company" id="company" required>
+                    <div class="field item-search-field">
+                        <label for="company">Company Name (search AutoCount Debtor)</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" name="company" id="company" required autocomplete="off" placeholder="Type company or Debtor code..." aria-autocomplete="list" aria-controls="customerAutocompleteList" aria-expanded="false">
+                            <ul id="customerAutocompleteList" class="autocomplete-list" role="listbox" hidden></ul>
+                        </div>
                     </div>
                     <div class="field">
                         <label for="attn">ATTN</label>
@@ -63,12 +74,41 @@
             <fieldset class="form-section">
                 <legend>Items</legend>
                 <div class="item-input-group">
-                    <div class="field"><label for="itemDesc">Item Description</label><input type="text" id="itemDesc"></div>
+                    <div class="field item-search-field">
+                        <label for="itemDesc">Item (search AutoCount stock)</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" id="itemDesc" autocomplete="off" placeholder="Type code or description..." aria-autocomplete="list" aria-controls="itemAutocompleteList" aria-expanded="false">
+                            <input type="hidden" id="itemCode" value="">
+                            <ul id="itemAutocompleteList" class="autocomplete-list" role="listbox" hidden></ul>
+                        </div>
+                        <p class="item-code-hint" id="itemCodeHint" hidden></p>
+                    </div>
                     <div class="field"><label for="units">Units</label><input type="number" id="units" value="1" min="1"></div>
                     <div class="field"><label for="price">Price (RM)</label><input type="number" id="price" value="0.00" step="0.01" min="0.00"></div>
                     <button type="button" id="addItemBtn" class="btn btn-secondary">Add Item</button>
                 </div>
                 <div id="item-list-container" style="margin-top:12px;"></div>
+                <div class="order-total-bar" id="orderTotalBar">
+                    <div class="order-total-meta">
+                        <span id="orderItemCount">0 items</span>
+                    </div>
+                    <div class="order-total-amount">
+                        <span class="order-total-label">Order Total</span>
+                        <strong id="orderTotalDisplay">RM 0.00</strong>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend>Attachments</legend>
+                <div class="attachment-zone">
+                    <label class="attachment-drop" for="attachmentInput">
+                        <span class="attachment-drop-title">📷 Add photos</span>
+                        <span class="attachment-drop-hint">Up to 5 images · max 5MB each · JPG/PNG/WebP</span>
+                    </label>
+                    <input type="file" id="attachmentInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+                    <div id="attachmentPreview" class="attachment-preview-grid"></div>
+                </div>
             </fieldset>
 
             <fieldset class="form-section">
@@ -92,7 +132,7 @@
     <!-- ===================== ACTIVE ORDERS ===================== -->
     <section class="tab-panel" data-panel="active">
         <div class="search-bar">
-            <input type="text" id="orderSearch" placeholder="Search company, PO#, item...">
+            <input type="text" id="orderSearch" placeholder="Search company, PO#, item, amount...">
         </div>
         <div id="orders-container"></div>
     </section>
@@ -102,6 +142,10 @@
         <div id="history-container"></div>
     </section>
 
+    <div id="toast-root" class="toast-root" aria-live="polite"></div>
+    <div id="modal-root"></div>
+
+    <script src="config.js"></script>
     <script type="module" src="scripts.js"></script>
 </body>
 </html>

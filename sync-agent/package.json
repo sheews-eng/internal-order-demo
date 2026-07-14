@@ -1,0 +1,19 @@
+{
+  "name": "internal-orders-autocount-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sync AutoCount stock items into Firebase RTDB for the Internal Orders app",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "sync": "node src/index.js --once",
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "firebase-admin": "^13.0.2"
+  }
+}

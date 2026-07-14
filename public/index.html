@@ -9,9 +9,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <title>Internal Orders — SSL Access Parts</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('io-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="landing">
+    <button type="button" class="theme-toggle landing-theme" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
     <img src="/favicon.png" class="logo-big" alt="SSL logo">
     <div>
       <h1>Internal Orders</h1>
@@ -28,5 +37,19 @@
       </a>
     </div>
   </div>
+  <script type="module">
+    const KEY = 'io-theme';
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const btn = document.getElementById('themeToggle');
+      if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+    applyTheme(localStorage.getItem(KEY) || 'light');
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(KEY, next);
+      applyTheme(next);
+    });
+  </script>
 </body>
 </html>
