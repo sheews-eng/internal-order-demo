@@ -3,75 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salesman - New Order</title>
-    
-    <link rel="icon" type="image/png" href="/favicon.png"> 
+    <title>Salesman — Orders</title>
 
-    <link rel="stylesheet" href="styles.css"> 
-    
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+
     <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js"></script>
 </head>
 <body>
 
-    <h1>Submit New Order</h1>
+    <header class="app-header">
+        <img src="/favicon.png" class="logo" alt="SSL">
+        <h1>Salesman</h1>
+        <a href="index.html" class="badge-role">Home</a>
+    </header>
 
-    <form id="order-form" class="order-form">
-        <label>Company Name: 
-            <input type="text" name="company" id="company" required>
-        </label>
-        <label>ATTN: 
-            <input type="text" name="attn" id="attn" required>
-        </label>
-        <label>H/P: 
-            <input type="text" name="hp" id="hp" required>
-        </label>
-        <label>P.O. Number: 
-            <input type="text" name="poNumber" id="poNumber" required>
-        </label>
+    <nav class="tab-bar">
+        <button class="tab-btn active" data-tab="new">New Order</button>
+        <button class="tab-btn" data-tab="active">
+            Active <span class="tab-count" id="activeCount"></span>
+            <span class="urgent-dot" id="activeUrgentDot"></span>
+        </button>
+        <button class="tab-btn" data-tab="history">History</button>
+    </nav>
 
-        <label>Delivery Location: 
-            <input type="text" name="delivery" id="delivery"> 
-        </label>
+    <!-- ===================== NEW ORDER ===================== -->
+    <section class="tab-panel active" data-panel="new">
+        <form id="order-form">
+            <fieldset class="form-section">
+                <legend>Customer</legend>
+                <div class="field-grid cols-2">
+                    <div class="field">
+                        <label for="company">Company Name</label>
+                        <input type="text" name="company" id="company" required>
+                    </div>
+                    <div class="field">
+                        <label for="attn">ATTN</label>
+                        <input type="text" name="attn" id="attn" required>
+                    </div>
+                    <div class="field">
+                        <label for="hp">H/P</label>
+                        <input type="text" name="hp" id="hp" required>
+                    </div>
+                    <div class="field">
+                        <label for="poNumber">P.O. Number</label>
+                        <input type="text" name="poNumber" id="poNumber" required>
+                    </div>
+                    <div class="field" style="grid-column: 1 / -1;">
+                        <label for="delivery">Delivery Location</label>
+                        <input type="text" name="delivery" id="delivery">
+                    </div>
+                </div>
+            </fieldset>
 
-        <label>Salesman Comment (Optional):
-            <textarea name="salesmanComment" id="salesmanComment"></textarea>
-        </label>
-        <label class="checkbox-container">
-            <input type="checkbox" name="isUrgent" id="isUrgent"> 
-            Mark as Urgent Order 🚨
-        </label>
+            <fieldset class="form-section">
+                <legend>Items</legend>
+                <div class="item-input-group">
+                    <div class="field"><label for="itemDesc">Item Description</label><input type="text" id="itemDesc"></div>
+                    <div class="field"><label for="units">Units</label><input type="number" id="units" value="1" min="1"></div>
+                    <div class="field"><label for="price">Price (RM)</label><input type="number" id="price" value="0.00" step="0.01" min="0.00"></div>
+                    <button type="button" id="addItemBtn" class="btn btn-secondary">Add Item</button>
+                </div>
+                <div id="item-list-container" style="margin-top:12px;"></div>
+            </fieldset>
 
-        <div class="item-input-group">
-            <label>Item Description: <input type="text" id="itemDesc"></label>
-            <label>Units: <input type="number" id="units" value="1" min="1"></label>
-            <label>Price (RM): <input type="number" id="price" value="0.00" step="0.01" min="0.00"></label>
-            <button type="button" id="addItemBtn">Add Item</button>
-        </div>
+            <fieldset class="form-section">
+                <legend>Notes</legend>
+                <div class="field" style="margin-bottom:12px;">
+                    <label for="salesmanComment">Comment (optional)</label>
+                    <textarea name="salesmanComment" id="salesmanComment" rows="3"></textarea>
+                </div>
+                <label class="urgent-toggle">
+                    <input type="checkbox" name="isUrgent" id="isUrgent">
+                    🚨 Mark as urgent order
+                </label>
+            </fieldset>
 
-        <h3>Current Items List</h3>
-        <div id="item-list-container" class="item-list-preview">
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary submit-order-btn">Submit Order</button>
             </div>
+        </form>
+    </section>
 
-        <button type="submit" class="submit-order-btn">Submit Order</button>
-    </form>
-
-    <hr>
-
-    <h1>Active Orders</h1>
-<div id="filter-controls">
-        <input type="text" id="orderSearch" placeholder="Start typing to search orders...">
-    </div>
-
-    <div id="orders-container">
+    <!-- ===================== ACTIVE ORDERS ===================== -->
+    <section class="tab-panel" data-panel="active">
+        <div class="search-bar">
+            <input type="text" id="orderSearch" placeholder="Search company, PO#, item...">
         </div>
-    
-    <hr>
+        <div id="orders-container"></div>
+    </section>
 
-    <h1>Order History</h1>
-    <div id="history-container">
-        </div>
-    
+    <!-- ===================== HISTORY ===================== -->
+    <section class="tab-panel" data-panel="history">
+        <div id="history-container"></div>
+    </section>
+
     <script type="module" src="scripts.js"></script>
 </body>
 </html>

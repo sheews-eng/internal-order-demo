@@ -3,31 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Manage Orders</title>
-    
-    <link rel="icon" type="image/png" href="/favicon.png"> 
-    
-    <link rel="stylesheet" href="styles.css"> 
-    
+    <title>Admin — Orders</title>
+
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+
     <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js"></script>
 </head>
 <body>
 
-    <h1>Admin Panel - Active Orders</h1>
+    <header class="app-header">
+        <img src="/favicon.png" class="logo" alt="SSL">
+        <h1>Admin</h1>
+        <a href="index.html" class="badge-role">Home</a>
+    </header>
 
-<div id="filter-controls">
-        <input type="text" id="orderSearch" placeholder="Start typing to search orders...">
-    </div>
+    <nav class="tab-bar">
+        <button class="tab-btn active" data-tab="active">
+            Active <span class="tab-count" id="activeCount"></span>
+            <span class="urgent-dot" id="activeUrgentDot"></span>
+        </button>
+        <button class="tab-btn" data-tab="history">History</button>
+    </nav>
 
-    <div id="orders-container">
+    <!-- ===================== ACTIVE ORDERS ===================== -->
+    <section class="tab-panel active" data-panel="active">
+        <div class="search-bar">
+            <input type="text" id="orderSearch" placeholder="Search company, PO#, ATTN, item...">
         </div>
-    
-    <hr>
+        <div id="orders-container"></div>
+    </section>
 
-    <h1>Order History (Deleted)</h1>
-    <div id="history-container">
-        </div>
+    <!-- ===================== HISTORY (deleted) ===================== -->
+    <section class="tab-panel" data-panel="history">
+        <div id="history-container"></div>
+    </section>
 
     <script type="module" src="scripts.js"></script>
 </body>
